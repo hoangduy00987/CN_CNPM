@@ -16,6 +16,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -99,7 +100,7 @@ class JobUpdateView(APIView):
             serializer = self.serializer_class(job, data=request.data)
             data = {}
             if serializer.is_valid():
-                serializer.update(request)
+                serializer.save()
                 data['message'] = 'Recruitment is updated successfully.'
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -159,3 +160,30 @@ class HideJobView(APIView):
         except Exception as error:
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
     
+class JobApplicationView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ApplicationSerializer
+
+    def get_candidate_profile(self, user):
+        return get_object_or_404(CandidateProfile, user=user)
+    
+    def post(self, request):
+        try:
+            job_id = request.data.get('job_id')
+            candidate = self.get_candidate_profile(request.user)
+            job = get_object_or_404(Job, pk=job_id, is_deleted=False)
+
+            data = request.data.copy()
+            data['candidate'] = candidate.id
+            data['job'] = job.id
+            data['applied_at'] = timezone.localtime(timezone.now())
+
+            serializer = self.serializer_class(data=data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("applucation create error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)

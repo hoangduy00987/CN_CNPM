@@ -11,6 +11,7 @@ class CandidateProfile(models.Model):
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_first_login = models.BooleanField(default=True)
 
     def __str__(self):
         return "Candidate: " + self.user.email + " " + self.full_name
@@ -26,6 +27,7 @@ class Company(models.Model):
     founded_year = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_first_login = models.BooleanField(default=True)
 
     def __str__(self):
         return "Company: " + self.name
