@@ -8,4 +8,5 @@ urlpatterns = [
     path('job-list-of-company/', JobListOfCompanyView.as_view(), name='job_list_company'),
     path('get-all-job-categories/', JobCategoryListView.as_view(), name='get_all_job_categories'),
     path('hide-recruitment/', HideJobView.as_view(), name='hide_job'),
+    path('apply/', JobApplicationView.as_view(), name='job_application'),
 ]

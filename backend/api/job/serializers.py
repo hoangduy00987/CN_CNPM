@@ -113,29 +113,8 @@ class JobUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Salary range must be in 'min-max USD', example: '1000-2000 USD'.")
         return value
     
-    def update(self, request):
-        try:
-            validated_data = self.validated_data
-            model = Job.objects.get(company__user=request.user)
-            print('model:', model)
-            fields_to_update = [
-                'job_category',
-                'title',
-                'description',
-                'skill_required',
-                'benefits',
-                'location',
-                'salary_range',
-                'status',
-                'level',
-                'experience',
-                'interview_process',
-            ]
+class ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ['id', 'candidate', 'job', 'cv', 'applied_at', 'is_urgent']
 
-            for field in fields_to_update:
-                setattr(model, field, validated_data[field])
-            model.save()
-            return model
-        except Exception as error:
-            print("update job error:", error)
-            return None

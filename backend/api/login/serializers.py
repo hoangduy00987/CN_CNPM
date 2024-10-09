@@ -1,6 +1,7 @@
 from rest_framework import  serializers
 from django.contrib.auth.models import User
 from ..submodels.models_user import *
+from ..submodels.models_recruitment import *
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -34,9 +35,10 @@ class RegisterSerializers(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True,write_only=True)
     email = serializers.EmailField(required=True)
+    user_role = serializers.CharField(required=True)
     class Meta:
         model = User
-        fields = ['username','password','email']
+        fields = ['username','password','email','user_role']
         extra_kwargs = {
             'password':{'write_only': True},
         }
@@ -54,8 +56,12 @@ class RegisterSerializers(serializers.ModelSerializer):
         username = self.validated_data['username']
         password = self.validated_data['password']
         email = self.validated_data['email']
+        user_role = self.validated_data['user_role']
         user = User.objects.create_user(username=username,password=password,email=email)
-        Profile.objects.create(user=user,created_at=datetime.now())
+        if user_role == 'candidate':
+            CandidateProfile.objects.create(user=user, full_name=username)
+        else:
+            Company.objects.create(user=user, name=username)
         return user
     
 

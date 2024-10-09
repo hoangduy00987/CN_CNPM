@@ -10,6 +10,7 @@ import requests
 from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 from ..submodels.models_user import *
+from ..submodels.models_recruitment import *
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
@@ -47,6 +48,7 @@ class GoogleView(APIView):
     def post(self, request):
         # get token Google from request
         token_google = request.data.get("token_google")
+        user_role = request.data.get("user_role", "candidate")
         if not token_google:
             return Response({'message': 'invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
         # send request to Google to validate token
@@ -73,10 +75,16 @@ class GoogleView(APIView):
         })
         is_first_login = False
         if created:
-            profile = Profile.objects.create(
-            user=user,created_at=datetime.now()
-            )
-            is_first_login = profile.is_first_login
+            if user_role == "candidate":
+                profile = CandidateProfile.objects.create(
+                    user=user, full_name=email
+                )
+                is_first_login = profile.is_first_login
+            else:
+                profile = Company.objects.create(
+                    user=user, name=email
+                )
+                is_first_login = profile.is_first_login
             
         # Create And Response token to user
         token = RefreshToken.for_user(user)
