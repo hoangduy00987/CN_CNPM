@@ -1,4 +1,9 @@
 from django.contrib import admin
-from .submodels.models_user import *
+from .submodels.models_recruitment import *
+
 # Register your models here.
-admin.site.register(Profile)
+admin.site.register(CandidateProfile)
+admin.site.register(Company)
+admin.site.register(JobCategory)
+admin.site.register(Job)
+admin.site.register(Application)
