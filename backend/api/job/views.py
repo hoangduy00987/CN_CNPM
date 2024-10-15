@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from rest_framework import status, generics, filters
+from rest_framework import status, generics, filters, viewsets
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.base_user import BaseUserManager
@@ -95,6 +95,9 @@ class JobUpdateView(APIView):
     def put(self, request):
         try:
             job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
             company = self.get_company(request.user)
             job = self.get_job(company, job_id)
             serializer = self.serializer_class(job, data=request.data)
@@ -111,6 +114,9 @@ class JobUpdateView(APIView):
     def patch(self, request):
         try:
             job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
             company = self.get_company(request.user)
             job = self.get_job(company, job_id)
             serializer = self.serializer_class(job, data=request.data, partial=True)
@@ -150,6 +156,9 @@ class HideJobView(APIView):
     def patch(self, request):
         try:
             job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
             company = self.get_company(request.user)
             job = self.get_job(company, job_id)
             job.is_deleted = True
@@ -162,7 +171,7 @@ class HideJobView(APIView):
     
 class JobApplicationView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = ApplicationSerializer
+    serializer_class = ApplyJobSerializer
 
     def get_candidate_profile(self, user):
         return get_object_or_404(CandidateProfile, user=user)
@@ -170,6 +179,9 @@ class JobApplicationView(APIView):
     def post(self, request):
         try:
             job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
             candidate = self.get_candidate_profile(request.user)
             job = get_object_or_404(Job, pk=job_id, is_deleted=False)
 
@@ -181,9 +193,82 @@ class JobApplicationView(APIView):
             serializer = self.serializer_class(data=data)
 
             if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                if not serializer.check_existed_application(request, job.id):
+                    serializer.save()
+                    return Response({
+                        "message": "Applied job successfully.",
+                        "result": serializer.data
+                    }, status=status.HTTP_201_CREATED)
+                return Response({"message": "You already applied this job."}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            print("applucation create error:", error)
+            print("application create error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+class ApplicationInforMVS(viewsets.ModelViewSet):
+    serializer_class = ApplicationInforSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=["GET"], detail=True, url_path="get_application_infor", url_name="get_application_infor")
+    def get_application_infor(self, request):
+        try:
+            application_id = request.data.get('application_id')
+            if not application_id:
+                return Response({"error": "application_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            data = Application.objects.get(pk=application_id)
+            serializer = self.serializer_class(data, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("get_application_infor_error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(methods=["GET"], detail=False, url_path="get_list_application_candidate", url_name="get_list_application_candidate")
+    def get_list_application_candidate(self, request):
+        try:
+            candidate = CandidateProfile.objects.get(user=request.user)
+            applications = Application.objects.filter(candidate=candidate)
+            serializer = self.serializer_class(applications, many=True, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("get_list_application_candidate_error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(methods=["GET"], detail=False, url_path="get_list_candidate_applied_for_job", url_name="get_list_candidate_applied_for_job")
+    def get_list_candidate_applied_for_job(self, request):
+        try:
+            job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            applications = Application.objects.filter(job=job_id)
+            serializer = self.serializer_class(applications, many=True, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("get_list_candidate_applied_for_job_error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+class ApproveApplicationView(APIView):
+    serializer_class = ApplyJobSerializer
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        try:
+            application_id = request.data.get('application_id')
+            if not application_id:
+                return Response({"error": "application_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            stt = request.data.get('status', Application.STATUS_REJECTED)
+            application = Application.objects.get(pk=application_id)
+            if stt.lower() == 'accepted':
+                application.status = Application.STATUS_ACCEPTED
+            else:
+                application.status = Application.STATUS_REJECTED
+            application.save()
+            return Response({
+                "message": f"{stt} successfully."
+            }, status=status.HTTP_200_OK)
+        except Exception as error:
+            print("approve_application_error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+            

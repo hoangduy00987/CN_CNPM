@@ -64,6 +64,16 @@ class Job(models.Model):
         return self.title
     
 class Application(models.Model):
+    STATUS_PENDING = 'Pending'
+    STATUS_ACCEPTED = 'Accepted'
+    STATUS_REJECTED = 'Rejected'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_ACCEPTED, 'Accepted'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
     candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
     applied_at = models.DateTimeField(null=True, blank=True)
@@ -71,6 +81,13 @@ class Application(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_urgent = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        null=True,
+        blank=True
+    )
 
     def __str__(self) -> str:
         return self.candidate.full_name + " " + self.job.title
