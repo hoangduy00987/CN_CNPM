@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from ..submodels.models_recruitment import *
+from ..candidate.serializers import CandidateProfileSerializer
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -113,8 +114,23 @@ class JobUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Salary range must be in 'min-max USD', example: '1000-2000 USD'.")
         return value
     
-class ApplicationSerializer(serializers.ModelSerializer):
+class ApplyJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = ['id', 'candidate', 'job', 'cv', 'applied_at', 'is_urgent']
+
+    def check_existed_application(self, request, job_id):
+        try:
+            candidate = CandidateProfile.objects.get(user=request.user)
+            application = Application.objects.get(candidate=candidate, job=job_id)
+            return True
+        except Application.DoesNotExist:
+            return False
+
+class ApplicationInforSerializer(serializers.ModelSerializer):
+    candidate = CandidateProfileSerializer()
+    
+    class Meta:
+        model = Application
+        fields = ['id', 'candidate', 'cv', 'applied_at', 'is_urgent', 'status']
 
