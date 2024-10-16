@@ -212,7 +212,7 @@ class ApplicationInforMVS(viewsets.ModelViewSet):
     @action(methods=["GET"], detail=True, url_path="get_application_infor", url_name="get_application_infor")
     def get_application_infor(self, request):
         try:
-            application_id = request.data.get('application_id')
+            application_id = request.query_params.get('application_id')
             if not application_id:
                 return Response({"error": "application_id is required."}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -237,7 +237,7 @@ class ApplicationInforMVS(viewsets.ModelViewSet):
     @action(methods=["GET"], detail=False, url_path="get_list_candidate_applied_for_job", url_name="get_list_candidate_applied_for_job")
     def get_list_candidate_applied_for_job(self, request):
         try:
-            job_id = request.data.get('job_id')
+            job_id = request.query_params.get('job_id')
             if not job_id:
                 return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
             
