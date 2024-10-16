@@ -1,5 +1,7 @@
 chay cau lenh nay ->  docker-compose up --build
 
+chay cau lenh nay de tao superuser
 docker-compose run --rm web sh -c "python manage.py createsuperuser"
-docker-compose run --rm web sh -c "python manage.py makemigrations"
-docker-compose run --rm web sh -c "python manage.py migrate"
+
+k can makemigrations hay migrate gi ca vi khi chay 
+docker-compose up --build han se tu dong lam cho r
