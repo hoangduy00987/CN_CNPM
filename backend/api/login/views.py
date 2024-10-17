@@ -267,3 +267,7 @@ class PasswordResetConfirmView(APIView):
             #hello
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class Success(APIView):
+    def get(self, request):
+        return Response({"message":"Chuc mung ban da successfuly"})
