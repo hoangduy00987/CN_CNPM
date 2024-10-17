@@ -186,19 +186,15 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'  # Đường dẫn truy cập tệp tĩnh
 MEDIA_URL = '/media/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 # Default primary key field type
-<<<<<<< HEAD
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-fieldSTATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-=======
-# https://docs.djangoproject.com/en/4.2/ref/
-# Default primary key field typesettings/#default-auto-field
->>>>>>> 5702cce6e3c8580991c6b7fe07fa48caa21ba0ed
 
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-fieldSTATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# https://docs.djangoproject.com/en/4.2/ref/
+# Default primary key field typesettings/#default-auto-fi
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EMAIL_BACKEND =  os.getenv('EMAIL_BACKEND')
 EMAIL_HOST =  os.getenv('EMAIL_HOST')
