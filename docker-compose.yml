@@ -1,5 +1,6 @@
-services:
+version: '3.8'
 
+services:
   db:
     image: postgres:13
     environment:
@@ -18,28 +19,36 @@ services:
     command: sh -c "python manage.py makemigrations && python manage.py migrate && gunicorn backend.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/app
+      - static_volume:/app/static 
+      - media_volume:/app/media  
     ports:
       - "8000:8000"
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     depends_on:
-      - db
-    env_file:
-      - .env
+      - db  # Đảm bảo dịch vụ web chỉ khởi động khi db đã sẵn sàng
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - static_volume:/usr/share/nginx/html/static
+      - media_volume:/usr/share/nginx/html/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web  # Đảm bảo Nginx khởi động sau khi dịch vụ web sẵn sàng
 
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL} # Email đăng nhập cho pgAdmin
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD} # Mật khẩu cho pgAdmin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}  # Email đăng nhập cho pgAdmin
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}  # Mật khẩu cho pgAdmin
     ports:
-      - "85:80" # Ánh xạ cổng để truy cập pgAdmin
+      - "85:80"  # Ánh xạ cổng để truy cập pgAdmin
     depends_on:
-      - db
+      - db  # Đảm bảo pgAdmin khởi động sau khi db sẵn sàng
     env_file:
       - .env
 
 volumes:
   postgres_data:
+  static_volume:
+  media_volume:
