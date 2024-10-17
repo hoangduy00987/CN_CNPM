@@ -3,14 +3,10 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
       - master
-      - develop
   pull_request:
     branches:
-      - main
-      - master
-      - develop
+      - ci_cd
 
 jobs:
   build:
@@ -28,8 +24,20 @@ jobs:
       - name: Đăng nhập vào Docker
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Deploy to server
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Set up SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@cnpm.duytech.site "cd CN_CNPM && git pull origin main && docker-compose up --build"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@54.254.142.47 << 'EOF'
+            if [ ! -d "CN_CNPM" ]; then
+              git clone git@github.com:hoangduy00987/CN_CNPM.git
+            fi
+            cd CN_CNPM
+            git pull origin master
+            sudo docker-compose up --build -d 
+            sudo systemctl restart gunicorn
+          EOF
