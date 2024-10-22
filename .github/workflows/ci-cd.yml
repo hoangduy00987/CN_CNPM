@@ -56,10 +56,15 @@ jobs:
         uses: actions/checkout@v2
 
       # 2. Chạy các bài kiểm tra
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        
       - name: Run tests
         run: |
           python ./backend/manage.py test ./backend/api/tests
-
+          
       # 3. Thông báo kết quả test
       - name: Notify test outcome
         if: failure()
