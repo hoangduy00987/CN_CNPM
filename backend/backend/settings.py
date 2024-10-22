@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'rest_framework',
     'django_filters',
+    'channels',
 ]
 MIDDLEWARE = [
    'corsheaders.middleware.CorsMiddleware',
@@ -82,6 +83,8 @@ CORS_ALLOWED_ORIGINS = [
    'http://18.142.230.37', 
    'http://localhost:3010', 
    'http://localhost:8081',
+   'http://localhost:5500',
+   'http://127.0.0.1:5500',
 ]
 ROOT_URLCONF = 'backend.urls'
 CORS_ALLOW_HEADERS = [
@@ -123,9 +126,20 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = 'backend.asgi.application'
+
 WSGI_APPLICATION = 'backend.wsgi.application'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Channels Layer configure (ex: Redis)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
