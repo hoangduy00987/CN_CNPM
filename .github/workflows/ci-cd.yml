@@ -58,7 +58,7 @@ jobs:
       - name: Run tests
         run: |
           ls -R
-          python manage.py test
+          python ./backend/manage.py test
 
       # 3. Thông báo kết quả test
       - name: Notify test outcome
