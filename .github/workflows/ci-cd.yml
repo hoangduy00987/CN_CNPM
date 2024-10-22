@@ -58,8 +58,8 @@ jobs:
       # 2. Chạy các bài kiểm tra
       - name: Run tests
         run: |
-          ls -R
-          python ./backend/manage.py test
+          pip install -r requirements.txt
+          python ./backend/manage.py ./backend/api/test
 
       # 3. Thông báo kết quả test
       - name: Notify test outcome
