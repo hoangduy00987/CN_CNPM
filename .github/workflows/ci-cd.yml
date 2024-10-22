@@ -25,8 +25,6 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Set environment variables
-        run: echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
       # 3. Cài đặt dependencies
       - name: Install dependencies
         run: |
@@ -48,7 +46,7 @@ jobs:
         if: failure()
         run: echo "Build failed" | mail -s "Build Notifications" hoangduy00998@gmail.com
 
-  test:
+  test: 
     runs-on: ubuntu-latest
     needs: build
 
@@ -60,13 +58,12 @@ jobs:
       # 2. Chạy các bài kiểm tra
       - name: Run tests
         run: |
-          pip install -r requirements.txt
-          python ./backend/manage.py ./backend/api/tests
+          python ./backend/manage.py test ./backend/api/tests
 
       # 3. Thông báo kết quả test
       - name: Notify test outcome
         if: failure()
-        run: echo "Test failed" | mail -s "Test Notification" hoangduy00998@gmail.com
+        run: echo "Test failed"
 
   deploy_to_production:
     runs-on: ubuntu-latest
