@@ -58,6 +58,7 @@ jobs:
       # 2. Chạy các bài kiểm tra
       - name: Run tests
         run: |
+          ls -R
           python manage.py test
 
       # 3. Thông báo kết quả test
