@@ -9,6 +9,7 @@ on:
       - main
       - master
       - ci-cd
+      - dinh#branch
 
 jobs:
   build:
@@ -22,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       # 3. Cài đặt dependencies
       - name: Install dependencies
@@ -39,13 +40,13 @@ jobs:
         run: |
           docker build -t app:latest .
           docker tag app:latest hoangduy00998/app:latest
-      
+
       # 6. Thông báo kết quả build
       - name: Notify build outcome
         if: failure()
         run: echo "Build failed" | mail -s "Build Notifications" hoangduy00998@gmail.com
 
-  test: 
+  test:
     runs-on: ubuntu-latest
     needs: build
 
