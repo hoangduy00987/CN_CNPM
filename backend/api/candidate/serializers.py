@@ -6,7 +6,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
     class Meta:
         model = CandidateProfile
-        fields = ['id', 'full_name', 'is_male', 'avatar', 'phone_number', 'email']
+        fields = ['id', 'full_name', 'is_male', 'avatar', 'phone_number', 'email','skills','level','cv']
 
     def get_email(self, obj):
         return obj.user.email
@@ -21,7 +21,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         try:
             validated_data = self.validated_data
             profile = CandidateProfile.objects.get(user=request.user)
-            fields_to_update = ['full_name', 'is_male', 'phone_number']
+            fields_to_update = ['full_name', 'is_male', 'phone_number','skills','level']
 
             for field in fields_to_update:
                 setattr(profile, field, validated_data[field])
@@ -34,7 +34,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         
 
 class UploadAvatarCandidateSerializer(serializers.ModelSerializer):
-    avatar = serializers.FileField(required=True)
+    avatar = serializers.ImageField(required=True)
 
     class Meta:
         model = CandidateProfile
@@ -50,4 +50,23 @@ class UploadAvatarCandidateSerializer(serializers.ModelSerializer):
         except Exception as error:
             print("update_candidate_avatar_error: ", error)
             return None
+        
+class CVCandidateSerializer(serializers.ModelSerializer):
+    cv = serializers.FileField(required=True)
+
+    class Meta:
+        model = CandidateProfile
+        fields = ['cv']
+
+    def upload_cv(self,request):
+        try:
+            cv = self.validated_data["cv"]
+            model = CandidateProfile.objects.get(user=request.user)
+            model.cv = cv
+            model.save()
+            return model
+        except Exception as error:
+            print("update_candidate_avatar_error: ", error)
+            return None
+
 
