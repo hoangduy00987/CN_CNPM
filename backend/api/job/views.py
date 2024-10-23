@@ -18,13 +18,13 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-
+from ..submodels.models_user import *
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from .serializers import *
 from .filters import JobFilter
-
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 class JobPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -62,12 +62,21 @@ class JobCategoryListView(APIView):
         return Response(serializer.data)
 
 
+
 class JobPostView(APIView):
     serializer_class = JobPostSerializer
     permission_classes = [IsAuthenticated]
 
     def get_company(self, user):
         return get_object_or_404(Company, user=user)
+    
+    def is_job_matching(self, profile, job):
+        skills_list = [skill.strip().lower() for skill in profile.skills.split(',')]
+        job_skills = [skill.strip().lower() for skill in job.skill_required.split(',')]
+        skills_match = any(skill in skills_list for skill in job_skills)
+        level_match = job.level.lower() == profile.level.lower()
+        
+        return skills_match and level_match
 
     def post(self, request):
         company = self.get_company(request.user)
@@ -76,12 +85,20 @@ class JobPostView(APIView):
         data['company'] = company.id
 
         serializer = self.serializer_class(data=data)
-
         if serializer.is_valid():
-            serializer.save()
+            job = serializer.save()
+            users = User.objects.all()
+            for user in users:
+                try:
+                    profile = CandidateProfile.objects.get(user=user)
+                except CandidateProfile.DoesNotExist:
+                    continue  # Bỏ qua người dùng này nếu không có hồ sơ
+                if self.is_job_matching(profile, job):
+                    Notification.objects.create(user=user, message=f"Có công việc mới phù hợp: {job.title}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
 class JobUpdateView(APIView):
     serializer_class = JobUpdateSerializer
     permission_classes = [IsAuthenticated]
@@ -129,7 +146,15 @@ class JobUpdateView(APIView):
         except Exception as error:
             print("updated job error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+    
 class JobListOfCompanyView(APIView):
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
