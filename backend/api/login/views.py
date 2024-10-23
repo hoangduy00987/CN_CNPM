@@ -270,7 +270,7 @@ class PasswordResetConfirmView(APIView):
     
 class Success(APIView):
     def get(self, request):
-        return Response({"message":"Chuc mung ban da successfuly"})
+        return Response({"message":"Chuc mung ban da successfuly sprint 4"})
     
 class Hello(APIView):
     def get(self, request):

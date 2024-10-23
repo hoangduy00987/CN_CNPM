@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from ..submodels.models_recruitment import Job, JobFollow
+from ..submodels.models_recruitment import Job, Application, JobFollow
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
@@ -19,6 +19,18 @@ def send_websocket_notification(sender, instance, **kwargs):
     )
     print('send to frontend')
 
+
+@receiver(post_save, sender=Application)
+def send_notification_when_new_apply(sender, instance, **kwargs):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        'application_group',
+        {
+            'type': 'add_new_application',
+            'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out.'
+        }
+    )
+
 @shared_task
 def notify_expiring_jobs():
     three_days_later = timezone.now() + timedelta(days=3)
@@ -33,13 +45,13 @@ def notify_expiring_jobs():
 
             # Gửi thông báo qua WebSocket cho ứng viên theo dõi, qua nhóm riêng của họ
             channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)( 
-                f'user_{candidate.user.id}',  # Nhóm dành riêng cho người dùng
+            async_to_sync(channel_layer.group_send)(
+                f'user_{candidate.id}',  # Gửi tới nhóm người dùng cụ thể
                 {
                     'type': 'send_update',
-                    'message': f"Job '{job.title}' is expiring in 3 days, don't miss it!",
+                    'message': f"Job '{job.title}' is expiring soon!",
                     'job_id': job.id,
-                    'user_id': candidate.user.id  # Gửi kèm ID người dùng
+                    'job_title': job.title
                 }
             )
 

@@ -20,7 +20,7 @@ class Profile(models.Model):
 class PasswordResetToken(models.Model):
     uid = models.CharField(max_length=255)
     token = models.CharField(max_length=255, unique=True)
-    created_at = models.DateTimeField(default=datetime.now)
+    created_at = models.DateTimeField(auto_now_add=True)
     is_used = models.BooleanField(default=False)  # Thêm trường này
 
     def __str__(self):
