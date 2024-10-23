@@ -352,6 +352,16 @@ class FollowJobView(APIView):
         except Exception as error:
             print("follow_job_error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def get(self,request):
+        try:
+            job_follow = JobFollow.objects.filter(candidate=request.user.id)
+            serializer = self.serializer_class(job_follow, many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+    
+        except Exception as error:
+            print("follow_job_error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ListJobFollowOfUserView(APIView):
     serializer_class = ListJobFollowSerializer

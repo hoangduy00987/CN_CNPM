@@ -8,6 +8,7 @@ class CandidateProfile(models.Model):
     full_name = models.CharField(max_length=100, null=True, blank=True)
     is_male = models.BooleanField(default=True)
     avatar = models.ImageField(upload_to="candidate_avatars/", null=True, blank=True)
+    cv = models.FileField(upload_to="cv/", null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
