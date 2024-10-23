@@ -60,7 +60,7 @@ jobs:
       - name: Run tests
         run: |
           pip install -r requirements.txt
-          python ./backend/manage.py ./backend/api/tests
+          python manage.py test
 
       # 3. Thông báo kết quả test
       - name: Notify test outcome
