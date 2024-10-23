@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
     steps:
       # 1. Checkout code từ repo
       - name: Checkout code
@@ -51,7 +51,7 @@ jobs:
   test: 
     runs-on: ubuntu-latest
     env:
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
     needs: build
 
     steps:
@@ -77,7 +77,7 @@ jobs:
   deploy_to_production:
     runs-on: ubuntu-latest
     env:
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
     needs: test
     if: success()
     steps:
