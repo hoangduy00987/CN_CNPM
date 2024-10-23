@@ -65,8 +65,12 @@ jobs:
           pip install -r requirements.txt
         
       - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
-          python manage.py test
+          cd backend
+          python manage.py test 
+
           
       # 3. Thông báo kết quả test
       - name: Notify test outcome
