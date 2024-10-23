@@ -156,7 +156,6 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT'),  # cổng cơ sở dữ liệu
     }
 }
-print("################",os.environ.get('DB_HOST'))
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
