@@ -271,4 +271,39 @@ class ApproveApplicationView(APIView):
         except Exception as error:
             print("approve_application_error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-            
+
+class FollowJobView(APIView):
+    serializer_class = JobFollowSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            job = Job.objects.get(pk=job_id)
+            user = request.user
+
+            job_follow, created = JobFollow.objects.get_or_create(
+                job=job,
+                candidate=user
+            )
+
+            if created:
+                # Nếu vừa tạo theo dõi mới
+                job_follow.is_notified = False
+                job_follow.save()
+                serializer = JobFollowSerializer(job_follow)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                # Nếu đã theo dõi, có thể hủy theo dõi
+                job_follow.delete()
+                return Response({"message": "Successfully unfollowed the job."}, status=status.HTTP_200_OK)
+
+        except Job.DoesNotExist:
+            return Response({"error": "Job not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as error:
+            print("follow_job_error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
