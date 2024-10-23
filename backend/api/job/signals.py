@@ -66,6 +66,7 @@ def notify_expiring_jobs():
                     'job_title': job.title
                 }
             )
+            print('Da gui message toi client')
 
             # Đánh dấu là đã thông báo để không thông báo lại
             follow.is_notified = True

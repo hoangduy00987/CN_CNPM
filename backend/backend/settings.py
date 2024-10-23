@@ -17,7 +17,7 @@ import os
 from celery.schedules import crontab
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # SECURITY WARNING: keep the secret key used in production secret!
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -135,10 +135,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Channels Layer configure (ex: Redis)
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        # 'CONFIG': {
-        #     "hosts": [('127.0.0.1', 6379)],
-        # },
+        # 'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
     },
 }
 
@@ -224,7 +225,7 @@ CELERY_BEAT_SCHEDULE = {
     'check-jobs-expiry-every-day': {
         'task': 'api.job.signals.notify_expiring_jobs',
         # 'schedule': crontab(hour=0, minute=0),  # Chạy vào nửa đêm mỗi ngày
-        'schedule': 300,
+        'schedule': 120,
     },
 }
 CELERY_BROKER_URL = 'redis://localhost:6379'
