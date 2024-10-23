@@ -14,8 +14,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
     steps:
       # 1. Checkout code từ repo
       - name: Checkout code
@@ -50,8 +48,6 @@ jobs:
 
   test: 
     runs-on: ubuntu-latest
-    env:
-      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
     needs: build
 
     steps:
@@ -67,7 +63,7 @@ jobs:
         
       - name: Run tests
         run: |
-          python ./backend/manage.py test ./backend/api/tests
+          python manage.py test
           
       # 3. Thông báo kết quả test
       - name: Notify test outcome
@@ -76,8 +72,6 @@ jobs:
 
   deploy_to_production:
     runs-on: ubuntu-latest
-    env:
-      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
     needs: test
     if: success()
     steps:
