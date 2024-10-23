@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from ..submodels.models_recruitment import *
 from ..candidate.serializers import CandidateProfileSerializer
+from django.core.mail import send_mail
+from django.conf import settings
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -143,3 +145,50 @@ class JobFollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobFollow
         fields = ['id', 'job', 'candidate', 'is_notified']
+
+class ListJobFollowSerializer(serializers.ModelSerializer):
+    job_id = serializers.SerializerMethodField()
+    job_title = serializers.SerializerMethodField()
+    class Meta:
+        model = JobFollow
+        fields = ['id', 'job_id', 'job_title']
+
+    def get_job_id(self, obj):
+        return obj.job.id
+
+    def get_job_title(self, obj):
+        return obj.job.title
+
+class InterviewInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterviewInformation
+        fields = ['id', 'time_interview', 'date_interview', 'location', 'note']
+
+    def add(self, request):
+        try:
+            candidate_id = request.data.get('candidate_id')
+            candidate = CandidateProfile.objects.get(id=candidate_id)
+            company = Company.objects.get(user=request.user)
+            time_interview = self.validated_data['time_interview']
+            date_interview = self.validated_data['date_interview']
+            location = self.validated_data['location']
+            note = self.validated_data['note']
+            model = InterviewInformation.objects.create(
+                candidate=candidate,
+                company=company,
+                time_interview=time_interview,
+                date_interview=date_interview,
+                location=location,
+                note=note
+            )
+            send_mail(
+                subject=f'Interview information from {company.name}',
+                message=f'We are very happy to invite you to the upcoming interview\nTime: {time_interview} {date_interview}\nLocation: {location}\nNote: {note}',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[candidate.user.email],
+                fail_silently=False
+            )
+            return model
+        except Exception as error:
+            print('add_interview_error:', error)
+            return None

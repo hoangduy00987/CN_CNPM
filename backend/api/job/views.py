@@ -61,7 +61,19 @@ class JobCategoryListView(APIView):
         serializer = self.serializer_class(job_categories, many=True)
         return Response(serializer.data)
 
+class JobDetailView(APIView):
+    serializer_class = JobSerializer
+    permission_classes = [AllowAny]
 
+    def get(self, request):
+        try:
+            job_id = request.query_params.get('job_id')
+            job = Job.objects.get(pk=job_id)
+            serializer = self.serializer_class(job)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Job.DoesNotExist:
+            print('job_not_found')
+            return Response({"error": "Job not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class JobPostView(APIView):
     serializer_class = JobPostSerializer
@@ -287,8 +299,16 @@ class ApproveApplicationView(APIView):
             application = Application.objects.get(pk=application_id)
             if stt.lower() == 'accepted':
                 application.status = Application.STATUS_ACCEPTED
+                Notification.objects.create(
+                    user=application.candidate.user,
+                    message=f'{application.job.company.name} vừa chấp nhận hồ sơ của bạn.'
+                )
             else:
                 application.status = Application.STATUS_REJECTED
+                Notification.objects.create(
+                    user=application.candidate.user,
+                    message=f'{application.job.company.name} vừa từ chối hồ sơ của bạn.'
+                )
             application.save()
             return Response({
                 "message": f"{stt} successfully."
@@ -309,10 +329,11 @@ class FollowJobView(APIView):
 
             job = Job.objects.get(pk=job_id)
             user = request.user
+            candidate = CandidateProfile.objects.get(user=user)
 
             job_follow, created = JobFollow.objects.get_or_create(
                 job=job,
-                candidate=user
+                candidate=candidate
             )
 
             if created:
@@ -332,3 +353,32 @@ class FollowJobView(APIView):
             print("follow_job_error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
+class ListJobFollowOfUserView(APIView):
+    serializer_class = ListJobFollowSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            candidate = CandidateProfile.objects.get(user=request.user)
+            follows = JobFollow.objects.filter(candidate=candidate)
+            serializer = self.serializer_class(follows, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as error:
+            print('get_list_follow_job_user_error:', error)
+            return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+class AddInterviewInformationView(APIView):
+    serializer_class = InterviewInformationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                serializer.add(request)
+                data['message'] = 'Add interview information successfully.'
+                return Response(data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)

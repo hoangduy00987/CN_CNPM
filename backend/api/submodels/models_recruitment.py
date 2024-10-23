@@ -111,3 +111,14 @@ class JobFollow(models.Model):
     def __str__(self):
         return f"{self.candidate.full_name} is following {self.job.title}"
     
+class InterviewInformation(models.Model):
+    candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    time_interview = models.TimeField(null=True, blank=True)
+    date_interview = models.DateField(null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.candidate.full_name} will be interviewed at {str(self.time_interview)} {str(self.date_interview)}'

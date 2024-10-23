@@ -17,6 +17,7 @@ urlpatterns = [
     path('update-recruitment/', JobUpdateView.as_view(), name='update_recruitment'),
     path('job-list-of-company/', JobListOfCompanyView.as_view(), name='job_list_company'),
     path('get-all-job-categories/', JobCategoryListView.as_view(), name='get_all_job_categories'),
+    path('detail-job/', JobDetailView.as_view(), name='detail_job'),
     path('hide-recruitment/', HideJobView.as_view(), name='hide_job'),
     path('apply/', JobApplicationView.as_view(), name='job_application'),
     path('get_application_infor/', get_application_infor),
@@ -25,4 +26,6 @@ urlpatterns = [
     path('approve_application/', ApproveApplicationView.as_view(), name='approve_application'),
     path('notifications_job/', NotificationListView.as_view(), name='notification-list'),
     path('follow/', FollowJobView.as_view(), name='follow_job'),
+    path('user-get-list-follow-job/', ListJobFollowOfUserView.as_view(), name='user_get_list_follow_job'),
+    path('add-interview-information/', AddInterviewInformationView.as_view(), name='add_interview_infor'),
 ]

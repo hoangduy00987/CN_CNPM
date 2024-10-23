@@ -28,7 +28,7 @@ application = ProtocolTypeRouter({
         URLRouter([
             path('ws/updates/', JobConsumer.as_asgi()),  # Đường dẫn WebSocket
             path('ws/new_application/', ApplicationConsumer.as_asgi()),
-            path('ws/desired_job/', NotificationJobConsumer.as_asgi()),
+            path('ws/notifications/', NotificationJobConsumer.as_asgi()),
             path('ws/expired_job_notification/', JobExpiryNotificationConsumer.as_asgi()),
         ])
     ),
