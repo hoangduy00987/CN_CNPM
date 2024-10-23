@@ -12,6 +12,11 @@ class JobCategorySerializer(serializers.ModelSerializer):
         model = JobCategory
         fields = ['id', 'title', 'order']
 
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'created_at']
+
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     job_category = JobCategorySerializer(read_only=True)
