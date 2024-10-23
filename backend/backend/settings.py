@@ -14,13 +14,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 import os
+from celery.schedules import crontab
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # SECURITY WARNING: keep the secret key used in production secret!
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG =  os.getenv('DEBUG')
+DEBUG = os.getenv('DEBUG') == 'True'
 
 allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = allowed_hosts_str.split(',')
@@ -219,3 +220,17 @@ EMAIL_HOST_USER =  os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD =  os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_TITLE = os.getenv('EMAIL_TITLE')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BEAT_SCHEDULE = {
+    'check-jobs-expiry-every-day': {
+        'task': 'api.job.signals.notify_expiring_jobs',
+        # 'schedule': crontab(hour=0, minute=0),  # Chạy vào nửa đêm mỗi ngày
+        'schedule': 300,
+    },
+}
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Ho_Chi_Minh'

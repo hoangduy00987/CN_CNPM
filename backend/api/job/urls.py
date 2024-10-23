@@ -23,5 +23,9 @@ urlpatterns = [
     path('get_list_application_candidate/', get_list_application_candidate),
     path('get_list_candidate_applied_for_job/', get_list_candidate_applied_for_job),
     path('approve_application/', ApproveApplicationView.as_view(), name='approve_application'),
+<<<<<<< HEAD
     path('notifications_job/', NotificationListView.as_view(), name='notification-list'),
+=======
+    path('follow/', FollowJobView.as_view(), name='follow_job'),
+>>>>>>> 01f433557fd9ec82cd6ea9a96fc9cd4e0f6dc059
 ]

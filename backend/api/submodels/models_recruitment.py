@@ -68,6 +68,7 @@ class Job(models.Model):
     experience = models.CharField(max_length=255, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     interview_process = models.TextField(null=True, blank=True)
+    expired_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -100,3 +101,13 @@ class Application(models.Model):
 
     def __str__(self) -> str:
         return self.candidate.full_name + " " + self.job.title
+
+class JobFollow(models.Model):
+    candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE)
+    followed_at = models.DateTimeField(auto_now_add=True)
+    is_notified = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.candidate.full_name} is following {self.job.title}"
+    

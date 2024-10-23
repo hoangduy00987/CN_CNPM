@@ -50,7 +50,7 @@ jobs:
           DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
           cd backend
-          python manage.py test 
+          python manage.py test api/tests
 
   deploy_to_production:
     runs-on: ubuntu-latest
