@@ -66,7 +66,7 @@ jobs:
         
       - name: Run tests
         run: |
-          python /home/runner/work/CN_CNPM/backend/manage.py test
+          python manage.py test
           
       # 3. Thông báo kết quả test
       - name: Notify test outcome
