@@ -64,3 +64,34 @@ class UploadCandidateAvatarView(APIView):
             print("upload candidate avatar error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
+class CVCandidateView(APIView):
+    serializer_class =CVCandidateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                serializer.upload_cv(request)
+                data['message'] = 'CV Upload  successfully.'
+                return Response(data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("upload candidate avatar error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, request):
+        try:
+            model = CandidateProfile.objects.get(user=request.user)
+            if model.cv:
+                model.cv.delete()  
+                model.cv = None  
+                model.save()  
+                return Response({"message": "CV deleted successfuly."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Cv not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as error:
+            print("delete_cv_error: ", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
