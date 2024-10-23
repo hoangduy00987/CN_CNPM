@@ -58,13 +58,21 @@ class JobConsumer(AsyncWebsocketConsumer):
 
 class ApplicationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Chấp nhận kết nối
-        self.group_name = "application_group"
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
-        await self.accept()
+        # Tham gia nhóm thông báo cá nhân
+        self.user = self.scope['user']
+        if self.user.is_authenticated:
+            self.group_name = f'company_new_apply_{self.user.id}'  # Mỗi người dùng có một nhóm riêng
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            await self.accept()
+            await self.send(text_data=json.dumps({
+                'message': 'You are connected to Websocket'
+            }))
+        else:
+            # Từ chối kết nối nếu người dùng chưa xác thực
+            await self.close()
 
     async def disconnect(self, code):
         # Xử lý khi kết nối bị ngắt
@@ -91,16 +99,21 @@ class ApplicationConsumer(AsyncWebsocketConsumer):
 
 class NotificationJobConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.user = self.scope['user']
-        self.group_name = f"user_{self.user.id}"
-
         # Tham gia nhóm thông báo cá nhân
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
-
-        await self.accept()
+        self.user = self.scope['user']
+        if self.user.is_authenticated:
+            self.group_name = f'user_job_notification_{self.user.id}'  # Mỗi người dùng có một nhóm riêng
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            await self.accept()
+            await self.send(text_data=json.dumps({
+                'message': 'You are connected to Websocket'
+            }))
+        else:
+            # Từ chối kết nối nếu người dùng chưa xác thực
+            await self.close()
 
     async def disconnect(self, close_code):
         # Xử lý khi kết nối bị ngắt
@@ -108,6 +121,12 @@ class NotificationJobConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
+
+    async def send_notification(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'message': message
+        }))
 
 class JobExpiryNotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -128,12 +147,6 @@ class JobExpiryNotificationConsumer(AsyncWebsocketConsumer):
             # Từ chối kết nối nếu người dùng chưa xác thực
             await self.close()
 
-        # self.group_name = f'user_{self.user.id}'  # Mỗi người dùng có một nhóm riêng
-        # await self.channel_layer.group_add(
-        #     self.group_name,
-        #     self.channel_name
-        # )
-        # await self.accept()
     
     async def disconnect(self, code):
         # Loại người dùng khỏi nhóm khi ngắt kết nối
@@ -142,14 +155,6 @@ class JobExpiryNotificationConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
-
-
-    async def send_notification(self, event):
-        message = event['message']
-        await self.send(text_data=json.dumps({
-            'message': message
-        }))
-
     
     async def receive(self, text_data):
         # Xử lý khi nhận dữ liệu từ WebSocket

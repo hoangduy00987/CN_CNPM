@@ -225,8 +225,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CELERY_BEAT_SCHEDULE = {
     'check-jobs-expiry-every-day': {
         'task': 'api.job.signals.notify_expiring_jobs',
-        # 'schedule': crontab(hour=0, minute=0),  # Chạy vào nửa đêm mỗi ngày
-        'schedule': 120,
+        'schedule': crontab(hour=0, minute=0),  # Chạy vào nửa đêm mỗi ngày
+        # 'schedule': 120,
     },
 }
 CELERY_BROKER_URL = 'redis://localhost:6379'
