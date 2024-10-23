@@ -3,18 +3,32 @@ import json
 
 class JobConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Chấp nhận kết nối
+        # Chấp nhận kết nối vào nhóm "updates_group"
         self.group_name = "updates_group"
         await self.channel_layer.group_add(
             self.group_name,
             self.channel_name
         )
+        
+        # Nhóm người dùng cá nhân
+        user_group_name = f"user_{self.scope['user'].id}"
+        await self.channel_layer.group_add(
+            user_group_name,
+            self.channel_name
+        )
+
         await self.accept()
 
     async def disconnect(self, code):
         # Xử lý khi kết nối bị ngắt
         await self.channel_layer.group_discard(
             self.group_name,
+            self.channel_name
+        )
+        # Xóa khỏi nhóm người dùng cá nhân
+        user_group_name = f"user_{self.scope['user'].id}"
+        await self.channel_layer.group_discard(
+            user_group_name,
             self.channel_name
         )
 
@@ -29,6 +43,18 @@ class JobConsumer(AsyncWebsocketConsumer):
         }))
 
     async def send_update(self, event):
-        await self.send(text_data=json.dumps({
-            'message': event['message']
-        }))
+        user_id = event.get('user_id')
+
+        # Nếu không có user_id, tức là gửi thông báo chung cho toàn bộ nhóm
+        if user_id is None:
+            await self.send(text_data=json.dumps({
+                'message': event['message'],
+                'job_id': event.get('job_id')
+            }))
+        else:
+            # Nếu có user_id, kiểm tra người dùng hiện tại có khớp không
+            if self.scope['user'].id == user_id:
+                await self.send(text_data=json.dumps({
+                    'message': event['message'],
+                    'job_id': event.get('job_id')
+                }))

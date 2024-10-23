@@ -14,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 import os
+from celery.schedules import crontab
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # SECURITY WARNING: keep the secret key used in production secret!
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -218,3 +219,10 @@ EMAIL_HOST_USER =  os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD =  os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_TITLE = os.getenv('EMAIL_TITLE')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BEAT_SCHEDULE = {
+    'check-jobs-expiry-every-day': {
+        'task': 'job.signals.notify_expiring_jobs',
+        'schedule': crontab(hour=0, minute=0),  # Chạy vào nửa đêm mỗi ngày
+    },
+}

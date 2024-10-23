@@ -134,3 +134,8 @@ class ApplicationInforSerializer(serializers.ModelSerializer):
         model = Application
         fields = ['id', 'candidate', 'cv', 'applied_at', 'is_urgent', 'status']
 
+class JobFollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobFollow
+        fields = ['id', 'job', 'candidate', 'is_notified']
+
