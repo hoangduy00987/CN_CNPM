@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5431:5432"
+      - "5431:5432"  # Kết nối từ host tới db
 
   web:
     build: .
@@ -19,24 +19,29 @@ services:
     volumes:
       - ./backend:/app
     ports:
-      - "8000:8000"
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    depends_on:
-      - db
+      - "8000:8000"  # Truy cập Django trên cổng 8000
     env_file:
-      - backend/.env
+      - ./backend/.env  # Sử dụng biến môi trường từ tệp .env
+
+  daphne:
+    build: .
+    command: daphne -b 0.0.0.0 -p 8001 backend.asgi:application
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8001:8000"  # Truy cập Daphne trên cổng 8001
+    env_file:
+      - ./backend/.env
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL} # Email đăng nhập cho pgAdmin
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}           # Mật khẩu cho pgAdmin
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - "85:80"                                  # Ánh xạ cổng để truy cập pgAdmin
+      - "85:80"  # Truy cập pgAdmin trên cổng 85
     depends_on:
       - db
 
 volumes:
-  postgres_data:
+  postgres_data:  # Tạo volume để lưu trữ dữ liệu PostgreSQL
