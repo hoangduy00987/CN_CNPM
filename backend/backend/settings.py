@@ -134,12 +134,15 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Channels Layer configure (ex: Redis)
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REDIS_HOSTNAME = os.getenv('REDIS_HOSTNAME')
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)  # Default to 6379 if not set
+
 CHANNEL_LAYERS = {
     'default': {
-        # 'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [f"redis://:{REDIS_PASSWORD}@{REDIS_HOSTNAME}:{REDIS_PORT}/0"],
         },
     },
 }
