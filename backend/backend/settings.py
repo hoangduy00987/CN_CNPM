@@ -133,10 +133,9 @@ ASGI_APPLICATION = 'backend.asgi.application'
 WSGI_APPLICATION = 'backend.wsgi.application'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Channels Layer configure (ex: Redis)
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_HOSTNAME = os.getenv('REDIS_HOSTNAME')
-REDIS_PORT = os.getenv('REDIS_PORT', 6379)  # Default to 6379 if not set
+REDIS_PORT = os.getenv('REDIS_PORT')  # Default to 6379 if not set
 
 CHANNEL_LAYERS = {
     'default': {
@@ -160,6 +159,7 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT'),  # cổng cơ sở dữ liệu
     }
 }
+print("#######,",os.environ.get('PGADMIN_DEFAULT_EMAIL'))
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
