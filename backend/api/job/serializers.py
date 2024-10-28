@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from ..submodels.models_recruitment import *
-from ..candidate.serializers import CandidateProfileSerializer
+from ..candidate.serializers import CandidateBasicProfileSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -12,17 +12,52 @@ class CompanySerializer(serializers.ModelSerializer):
 class JobCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = JobCategory
-        fields = ['id', 'title', 'order']
+        fields = ['id', 'title', 'description']
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'message', 'created_at']
 
+class JobSearchSerializer(serializers.ModelSerializer):
+    company = serializers.SerializerMethodField()
+    job_category = serializers.SerializerMethodField()
+    avatar_company = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Job
+        fields = [
+            'id',
+            'company',
+            'job_category',
+            'title',
+            'skill_required',
+            'benefits',
+            'location',
+            'salary_range',
+            'level',
+            'created_at',
+            'updated_at',
+            'avatar_company',
+            'expired_at'
+        ]
+
+    def get_company(self, obj):
+        return obj.company.name
+    
+    def get_job_category(self, obj):
+        return obj.job_category.title
+    
+    def get_avatar_company(self, obj):
+        request = self.context.get('request')
+        if obj.company.avatar and request:
+            return request.build_absolute_uri(obj.company.avatar.url)
+        return None
+
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     job_category = JobCategorySerializer(read_only=True)
-    avatar_url = serializers.SerializerMethodField()
+    avatar_company = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
@@ -42,10 +77,11 @@ class JobSerializer(serializers.ModelSerializer):
             'interview_process',
             'created_at',
             'updated_at',
-            'avatar_url',
+            'avatar_company',
+            'expired_at'
         ]
 
-    def get_avatar_url(self, obj):
+    def get_avatar_company(self, obj):
         request = self.context.get('request')
         if obj.company.avatar and request:
             return request.build_absolute_uri(obj.company.avatar.url)
@@ -71,6 +107,7 @@ class JobPostSerializer(serializers.ModelSerializer):
             'level',
             'experience',
             'interview_process',
+            'expired_at'
         ]
 
     def validate_salary_range(self, value):
@@ -111,6 +148,7 @@ class JobUpdateSerializer(serializers.ModelSerializer):
             'level',
             'experience',
             'interview_process',
+            'expired_at'
         ]
 
     def validate_salary_range(self, value):
@@ -135,29 +173,33 @@ class ApplyJobSerializer(serializers.ModelSerializer):
             return False
 
 class ApplicationInforSerializer(serializers.ModelSerializer):
-    candidate = CandidateProfileSerializer()
+    candidate = CandidateBasicProfileSerializer()
     
     class Meta:
         model = Application
         fields = ['id', 'candidate', 'cv', 'applied_at', 'is_urgent', 'status']
 
 class JobFollowSerializer(serializers.ModelSerializer):
-    job = JobSerializer(many=True)
     class Meta:
         model = JobFollow
         fields = ['id', 'job', 'candidate', 'is_notified']
+
 class ListJobFollowSerializer(serializers.ModelSerializer):
     job_id = serializers.SerializerMethodField()
     job_title = serializers.SerializerMethodField()
+    company = serializers.SerializerMethodField()
     class Meta:
         model = JobFollow
-        fields = ['id', 'job_id', 'job_title']
+        fields = ['id', 'job_id', 'job_title', 'company']
 
     def get_job_id(self, obj):
         return obj.job.id
 
     def get_job_title(self, obj):
         return obj.job.title
+    
+    def get_company(self, obj):
+        return obj.job.company.name
 
 class InterviewInformationSerializer(serializers.ModelSerializer):
     class Meta:

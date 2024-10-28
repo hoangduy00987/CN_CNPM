@@ -20,8 +20,8 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from .serializers import *
 
 
-class CandidateProfileView(APIView):
-    serializer_class = CandidateProfileSerializer
+class CandidateBasicProfileView(APIView):
+    serializer_class = CandidateBasicProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -40,7 +40,34 @@ class CandidateProfileView(APIView):
             data = {}
             if serializer.is_valid():
                 serializer.update(request)
-                data['message'] = 'Update candidate profile successfully.'
+                data['message'] = 'Update candidate basic profile successfully.'
+                return Response(data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("update candidate profile error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+class CandidateAdvancedProfileView(APIView):
+    serializer_class = CandidateAdvancedProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = request.user
+            profile = CandidateProfile.objects.get(user=user)
+            serializer = self.serializer_class(profile, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def post(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                serializer.update(request)
+                data['message'] = 'Update candidate advanced profile successfully.'
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -68,17 +95,27 @@ class CVCandidateView(APIView):
     serializer_class =CVCandidateSerializer
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        try:
+            user = request.user
+            profile = CandidateProfile.objects.get(user=user)
+            serializer = self.serializer_class(profile, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
     def post(self, request):
         try:
             serializer = self.serializer_class(data=request.data)
             data = {}
             if serializer.is_valid():
                 serializer.upload_cv(request)
-                data['message'] = 'CV Upload  successfully.'
+                data['message'] = 'CV upload successfully.'
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            print("upload candidate avatar error:", error)
+            print("upload candidate cv error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request):
@@ -90,7 +127,7 @@ class CVCandidateView(APIView):
                 model.save()  
                 return Response({"message": "CV deleted successfuly."}, status=status.HTTP_200_OK)
             else:
-                return Response({"error": "Cv not found."}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"error": "CV not found."}, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as error:
             print("delete_cv_error: ", error)

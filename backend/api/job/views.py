@@ -23,8 +23,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from .serializers import *
 from .filters import JobFilter
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+
 class JobPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -32,8 +31,8 @@ class JobPagination(PageNumberPagination):
 
 
 class JobSearchView(generics.ListAPIView):
-    serializer_class = JobSerializer
-    queryset = Job.objects.filter(is_deleted=False)
+    serializer_class = JobSearchSerializer
+    queryset = Job.objects.filter(is_deleted=False, status=Job.STATUS_ACTIVE, expired_at__gt=timezone.now())
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = JobFilter
@@ -84,31 +83,33 @@ class JobPostView(APIView):
     
     def is_job_matching(self, profile, job):
         skills_list = [skill.strip().lower() for skill in profile.skills.split(',')]
-        job_skills = [skill.strip().lower() for skill in job.skill_required.split(',')]
-        skills_match = any(skill in skills_list for skill in job_skills)
-        level_match = job.level.lower() == profile.level.lower()
+        # job_skills = [skill.strip().lower() for skill in job.skill_required.split(',')]
+        skills_match = any(skill in job.skill_required for skill in skills_list)
+        # level_match = job.level.lower() == profile.work_experience.lower()
         
-        return skills_match and level_match
+        # return skills_match and level_match
+        return skills_match
 
     def post(self, request):
-        company = self.get_company(request.user)
+        try:
+            company = self.get_company(request.user)
 
-        data = request.data.copy()
-        data['company'] = company.id
+            data = request.data.copy()
+            data['company'] = company.id
 
-        serializer = self.serializer_class(data=data)
-        if serializer.is_valid():
-            job = serializer.save()
-            users = User.objects.all()
-            for user in users:
-                try:
-                    profile = CandidateProfile.objects.get(user=user)
-                except CandidateProfile.DoesNotExist:
-                    continue  # Bỏ qua người dùng này nếu không có hồ sơ
-                if self.is_job_matching(profile, job):
-                    Notification.objects.create(user=user, message=f"Có công việc mới phù hợp: {job.title}")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                job = serializer.save()
+                candidates = CandidateProfile.objects.all()
+                for candidate in candidates:
+                    condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
+                    if self.is_job_matching(candidate, job) and condition:
+                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}")
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("post job error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class JobUpdateView(APIView):
@@ -120,6 +121,15 @@ class JobUpdateView(APIView):
     
     def get_job(self, company, job_id):
         return get_object_or_404(Job, company=company, pk=job_id, is_deleted=False)
+    
+    def is_job_matching(self, profile, job):
+        skills_list = [skill.strip().lower() for skill in profile.skills.split(',')]
+        # job_skills = [skill.strip().lower() for skill in job.skill_required.split(',')]
+        skills_match = any(skill in job.skill_required for skill in skills_list)
+        # level_match = job.level.lower() == profile.work_experience.lower()
+        
+        # return skills_match and level_match
+        return skills_match
 
     def put(self, request):
         try:
@@ -132,8 +142,13 @@ class JobUpdateView(APIView):
             serializer = self.serializer_class(job, data=request.data)
             data = {}
             if serializer.is_valid():
-                serializer.save()
+                job = serializer.save()
                 data['message'] = 'Recruitment is updated successfully.'
+                candidates = CandidateProfile.objects.all()
+                for candidate in candidates:
+                    condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
+                    if self.is_job_matching(candidate, job) and condition:
+                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}")
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -151,8 +166,13 @@ class JobUpdateView(APIView):
             serializer = self.serializer_class(job, data=request.data, partial=True)
             data = {}
             if serializer.is_valid():
-                serializer.save()
+                job = serializer.save()
                 data['message'] = 'Recruitment is updated successfully.'
+                candidates = CandidateProfile.objects.all()
+                for candidate in candidates:
+                    condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
+                    if self.is_job_matching(candidate, job) and condition:
+                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}")
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -168,7 +188,7 @@ class NotificationListView(APIView):
         return Response(serializer.data)
     
 class JobListOfCompanyView(APIView):
-    serializer_class = JobSerializer
+    serializer_class = JobSearchSerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -340,8 +360,7 @@ class FollowJobView(APIView):
                 # Nếu vừa tạo theo dõi mới
                 job_follow.is_notified = False
                 job_follow.save()
-                serializer = JobFollowSerializer(job_follow)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response({"message": f"Followed the job {job.title} successfully."}, status=status.HTTP_201_CREATED)
             else:
                 # Nếu đã theo dõi, có thể hủy theo dõi
                 job_follow.delete()
@@ -353,9 +372,10 @@ class FollowJobView(APIView):
             print("follow_job_error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
-    def get(self,request):
+    def get(self, request):
         try:
-            job_follow = JobFollow.objects.filter(candidate=request.user.id)
+            candidate = CandidateProfile.objects.get(user=request.user)
+            job_follow = JobFollow.objects.filter(candidate=candidate)
             serializer = self.serializer_class(job_follow, many=True)
             return Response(serializer.data,status=status.HTTP_200_OK)
     

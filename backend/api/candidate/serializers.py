@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from ..submodels.models_recruitment import *
 
-class CandidateProfileSerializer(serializers.ModelSerializer):
+class CandidateBasicProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
     class Meta:
         model = CandidateProfile
-        fields = ['id', 'full_name', 'is_male', 'avatar', 'phone_number', 'email','skills','level','cv']
+        fields = ['id', 'full_name', 'birthday', 'is_male', 'avatar', 'phone_number', 'email', 'address']
 
     def get_email(self, obj):
         return obj.user.email
@@ -21,7 +21,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         try:
             validated_data = self.validated_data
             profile = CandidateProfile.objects.get(user=request.user)
-            fields_to_update = ['full_name', 'is_male', 'phone_number','skills','level']
+            fields_to_update = ['full_name', 'birthday', 'is_male', 'phone_number', 'address']
 
             for field in fields_to_update:
                 setattr(profile, field, validated_data[field])
@@ -29,9 +29,45 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             profile.save()
             return profile
         except Exception as error:
-            print("Update candidate error:", error)
+            print("update_candidate_basic_profile_error:", error)
             return None
         
+class CandidateAdvancedProfileSerializer(serializers.ModelSerializer):
+    other_information = serializers.SerializerMethodField()
+    class Meta:
+        model = CandidateProfile
+        fields = ['summary', 'skills', 'work_experience', 'education', 'projects', 'other_information']
+
+    def get_other_information(self, obj):
+        data = {}
+        data['languages'] = obj.languages
+        data['interests'] = obj.interests
+        data['references'] = obj.references
+        data['activities'] = obj.activities
+        data['certifications'] = obj.certifications
+        data['additional_info'] = obj.additional_info
+        return data
+    
+    def update(self, request):
+        try:
+            validated_data = self.validated_data
+            print(">>>", validated_data)
+            additional_info = request.data.get('other_information')
+            profile = CandidateProfile.objects.get(user=request.user)
+            fields_to_update = ['summary', 'skills', 'work_experience', 'education', 'projects']
+            fields_additional_info = ['languages', 'interests', 'references', 'activities', 'certifications', 'additional_info']
+
+            for field in fields_to_update:
+                setattr(profile, field, validated_data[field])
+
+            for field in fields_additional_info:
+                setattr(profile, field, additional_info[field])
+
+            profile.save()
+            return profile
+        except Exception as error:
+            print("update_candidate_advanced_profile_error:", error)
+            return None
 
 class UploadAvatarCandidateSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(required=True)
@@ -66,7 +102,7 @@ class CVCandidateSerializer(serializers.ModelSerializer):
             model.save()
             return model
         except Exception as error:
-            print("update_candidate_avatar_error: ", error)
+            print("update_candidate_cv_error: ", error)
             return None
 
 
