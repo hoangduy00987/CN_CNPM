@@ -9,17 +9,18 @@ from datetime import timedelta
 from django.core.mail import send_mail
 from django.conf import settings
 
-@receiver(post_save, sender=Job)
-def send_websocket_notification(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        'updates_group',
-        {
-            'type': 'send_update',
-            'message': f'New update: {instance.title}'
-        }
-    )
-    print('send to frontend')
+# @receiver(post_save, sender=Job)
+# def send_websocket_notification(sender, instance, **kwargs):
+#     if instance.status == Job.STATUS_ACTIVE:
+#         channel_layer = get_channel_layer()
+#         async_to_sync(channel_layer.group_send)(
+#             'updates_group',
+#             {
+#                 'type': 'send_update',
+#                 'message': f'New update: {instance.title}'
+#             }
+#         )
+#         print('send to frontend')
 
 
 @receiver(post_save, sender=Application)
