@@ -17,7 +17,7 @@ class JobCategorySerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['id', 'message', 'created_at']
+        fields = ['id', 'message', 'is_read', 'created_at']
 
 class JobSearchSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField()
@@ -35,6 +35,7 @@ class JobSearchSerializer(serializers.ModelSerializer):
             'benefits',
             'location',
             'salary_range',
+            'status',
             'level',
             'created_at',
             'updated_at',
