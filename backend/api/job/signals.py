@@ -24,20 +24,21 @@ from django.conf import settings
 
 
 @receiver(post_save, sender=Application)
-def send_notification_when_new_apply(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f'company_new_apply_{instance.job.company.user.id}',
-        {
-            'type': 'add_new_application',
-            'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out.'
-        }
-    )
+def send_notification_when_new_apply(sender, instance, created, **kwargs):
+    if created:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'company_new_apply_{instance.job.company.user.id}',
+            {
+                'type': 'add_new_application',
+                'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out.'
+            }
+        )
 
 @shared_task
 def notify_expiring_jobs():
-    three_days_later = timezone.now() + timedelta(days=3)
-    jobs_about_to_expire = Job.objects.filter(expired_at__isnull=False, expired_at__lte=three_days_later, expired_at__gte=timezone.now())
+    days_later = timezone.now() + timedelta(days=7)
+    jobs_about_to_expire = Job.objects.filter(expired_at__isnull=False, expired_at__lte=days_later, expired_at__gte=timezone.now())
 
     for job in jobs_about_to_expire:
         # Lấy danh sách ứng viên theo dõi công việc này
@@ -77,13 +78,14 @@ def notify_expiring_jobs():
             # follow.save()
 
 @receiver(post_save, sender=Notification)
-def send_new_notification(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f'user_job_notification_{instance.user.id}',
-        {
-            'type': 'send_notification',
-            'message': instance.message
-        }
-    )
-    print('Da gui thong bao toi nguoi dung')
+def send_new_notification(sender, instance, created, **kwargs):
+    if created:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'user_job_notification_{instance.user.id}',
+            {
+                'type': 'send_notification',
+                'message': instance.message
+            }
+        )
+        print('Da gui thong bao toi nguoi dung')

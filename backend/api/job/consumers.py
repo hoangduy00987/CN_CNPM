@@ -67,9 +67,6 @@ class ApplicationConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             await self.accept()
-            await self.send(text_data=json.dumps({
-                'message': 'You are connected to Websocket'
-            }))
         else:
             # Từ chối kết nối nếu người dùng chưa xác thực
             await self.close()
@@ -108,9 +105,6 @@ class NotificationJobConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             await self.accept()
-            await self.send(text_data=json.dumps({
-                'message': 'You are connected to Websocket'
-            }))
         else:
             # Từ chối kết nối nếu người dùng chưa xác thực
             await self.close()
@@ -140,9 +134,6 @@ class JobExpiryNotificationConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             await self.accept()
-            await self.send(text_data=json.dumps({
-                'message': 'You are connected to Websocket'
-            }))
         else:
             # Từ chối kết nối nếu người dùng chưa xác thực
             await self.close()

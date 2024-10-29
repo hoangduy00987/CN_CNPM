@@ -104,7 +104,7 @@ class JobPostView(APIView):
                 for candidate in candidates:
                     condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
                     if self.is_job_matching(candidate, job) and condition:
-                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}")
+                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}/job_id={job.id}")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -148,7 +148,7 @@ class JobUpdateView(APIView):
                 for candidate in candidates:
                     condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
                     if self.is_job_matching(candidate, job) and condition:
-                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}")
+                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}/job_id={job.id}")
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -172,7 +172,7 @@ class JobUpdateView(APIView):
                 for candidate in candidates:
                     condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
                     if self.is_job_matching(candidate, job) and condition:
-                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}")
+                        Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}/job_id={job.id}")
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -183,7 +183,7 @@ class NotificationListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+        notifications = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')
         serializer = NotificationSerializer(notifications, many=True)
         return Response(serializer.data)
     
@@ -321,13 +321,13 @@ class ApproveApplicationView(APIView):
                 application.status = Application.STATUS_ACCEPTED
                 Notification.objects.create(
                     user=application.candidate.user,
-                    message=f'{application.job.company.name} vừa chấp nhận hồ sơ của bạn.'
+                    message=f'{application.job.company.name} vừa chấp nhận hồ sơ của bạn./job_id={application.job.id}'
                 )
             else:
                 application.status = Application.STATUS_REJECTED
                 Notification.objects.create(
                     user=application.candidate.user,
-                    message=f'{application.job.company.name} vừa từ chối hồ sơ của bạn.'
+                    message=f'{application.job.company.name} vừa từ chối hồ sơ của bạn./job_id={application.job.id}'
                 )
             application.save()
             return Response({

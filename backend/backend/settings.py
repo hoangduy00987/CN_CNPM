@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'channels',
 ]
 MIDDLEWARE = [
-   'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -58,17 +58,6 @@ MIDDLEWARE = [
 AUTHENTICATION_BACKENDS = [
     'api.login.email_backend.EmailOrUsernameModelBackend',
     'django.contrib.auth.backends.ModelBackend',
-]
-
-MIDDLEWARE = [
-   'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware', 
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -106,7 +95,7 @@ CORS_ALLOW_METHODS = [
 ]
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=15),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -159,7 +148,7 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT'),  # cổng cơ sở dữ liệu
     }
 }
-print("#######,",os.environ.get('PGADMIN_DEFAULT_EMAIL'))
+# print("#######,",os.environ.get('PGADMIN_DEFAULT_EMAIL'))
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -223,7 +212,6 @@ EMAIL_USE_TLS =  os.getenv('EMAIL_USE_TLS')
 EMAIL_HOST_USER =  os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD =  os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_TITLE = os.getenv('EMAIL_TITLE')
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CELERY_BEAT_SCHEDULE = {
     'check-jobs-expiry-every-day': {
