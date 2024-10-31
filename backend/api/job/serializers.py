@@ -235,3 +235,74 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
         except Exception as error:
             print('add_interview_error:', error)
             return None
+
+class JobPostingLimitOfCompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobPostingLimit
+        fields = ['id', 'period', 'max_jobs', 'start_date', 'end_date']
+
+# =============== Admin ===================
+class AdminManageJobPostingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = ['id', 'approval_status', 'rejection_reason']
+
+    def accept_job_posting(self, request):
+        try:
+            job_id = request.data.get('job_id')
+            job = Job.objects.get(pk=job_id)
+            job.approval_status = Job.APPROVAL_APPROVED
+            job.rejection_reason = None
+            job.save()
+            return job
+        except Exception as error:
+            print("accepting_job_error:", error)
+            return None
+    
+    def reject_job_posting(self, request):
+        try:
+            job_id = request.data.get('job_id')
+            validated_data = self.validated_data
+            job = Job.objects.get(pk=job_id)
+            job.approval_status = Job.APPROVAL_REJECTED
+            job.rejection_reason = validated_data['rejection_reason']
+            job.save()
+            return job
+        except Exception as error:
+            print("rejecting_job_error:", error)
+            return None
+
+class AdminListJobPostingSerializer(serializers.ModelSerializer):
+    company = CompanySerializer(read_only=True)
+    job_category = JobCategorySerializer(read_only=True)
+    avatar_company = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Job
+        fields = [
+            'id',
+            'company',
+            'job_category',
+            'title',
+            'description',
+            'skill_required',
+            'benefits',
+            'location',
+            'salary_range',
+            'status',
+            'level',
+            'experience',
+            'interview_process',
+            'created_at',
+            'updated_at',
+            'avatar_company',
+            'expired_at',
+            'approval_status',
+            'rejection_reason'
+        ]
+
+    def get_avatar_company(self, obj):
+        request = self.context.get('request')
+        if obj.company.avatar and request:
+            return request.build_absolute_uri(obj.company.avatar.url)
+        return None

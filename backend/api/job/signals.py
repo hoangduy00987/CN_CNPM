@@ -31,7 +31,7 @@ def send_notification_when_new_apply(sender, instance, created, **kwargs):
             f'company_new_apply_{instance.job.company.user.id}',
             {
                 'type': 'add_new_application',
-                'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out.'
+                'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out./job_id={instance.job.id}'
             }
         )
 
