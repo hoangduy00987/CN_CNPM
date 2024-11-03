@@ -45,6 +45,9 @@ class CandidateAdvancedProfileSerializer(serializers.ModelSerializer):
         data['references'] = obj.references
         data['activities'] = obj.activities
         data['certifications'] = obj.certifications
+        data['preferred_salary'] = obj.preferred_salary
+        data['preferred_work_location'] = obj.preferred_work_location
+        data['years_of_experience'] = obj.years_of_experience
         data['additional_info'] = obj.additional_info
         return data
     
@@ -55,7 +58,9 @@ class CandidateAdvancedProfileSerializer(serializers.ModelSerializer):
             additional_info = request.data.get('other_information')
             profile = CandidateProfile.objects.get(user=request.user)
             fields_to_update = ['summary', 'skills', 'work_experience', 'education', 'projects']
-            fields_additional_info = ['languages', 'interests', 'references', 'activities', 'certifications', 'additional_info']
+            fields_additional_info = ['languages', 'interests', 'references', 
+                                      'activities', 'certifications', 'additional_info',
+                                      'preferred_salary', 'preferred_work_location', 'years_of_experience']
 
             for field in fields_to_update:
                 setattr(profile, field, validated_data[field])

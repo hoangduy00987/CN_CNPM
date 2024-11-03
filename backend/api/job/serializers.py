@@ -86,6 +86,28 @@ class JobSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.company.avatar.url)
         return None
 
+class JobListOfCompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = [
+            'id',
+            'job_type',
+            'title',
+            'skill_required',
+            'benefits',
+            'location',
+            'specific_address',
+            'salary_range',
+            'status',
+            'level',
+            'created_at',
+            'updated_at',
+            'expired_at',
+            'is_expired',
+            'rejection_reason',
+            'approved_at'
+        ]
+
 class JobManagementSerializer(serializers.ModelSerializer):
     is_posted = serializers.SerializerMethodField()
     class Meta:
@@ -152,7 +174,47 @@ class JobManagementSerializer(serializers.ModelSerializer):
             )
             return job
         except Exception as error:
-            print('first_save_job_error:', error)
+            print('add_job_error:', error)
+            return None
+        
+    def add_and_post(self, request):
+        try:
+            company = Company.objects.get(user=request.user)
+            job_type = self.validated_data['job_type']
+            title = self.validated_data['title']
+            description = self.validated_data['description']
+            skill_required = self.validated_data['skill_required']
+            benefits = self.validated_data['benefits']
+            location = self.validated_data['location']
+            specific_address = self.validated_data['specific_address']
+            salary_range = self.validated_data['salary_range']
+            level = self.validated_data['level']
+            minimum_years_of_experience = self.validated_data['minimum_years_of_experience']
+            role_and_responsibilities = self.validated_data['role_and_responsibilities']
+            contract_type = self.validated_data['contract_type']
+            interview_process = self.validated_data['interview_process']
+            expired_at = self.validated_data['expired_at']
+            job = Job.objects.create(
+                company=company,
+                job_type=job_type,
+                title=title,
+                description=description,
+                skill_required=skill_required,
+                benefits=benefits,
+                location=location,
+                specific_address=specific_address,
+                salary_range=salary_range,
+                status=Job.STATUS_PENDING,
+                level=level,
+                minimum_years_of_experience=minimum_years_of_experience,
+                role_and_responsibilities=role_and_responsibilities,
+                contract_type=contract_type,
+                interview_process=interview_process,
+                expired_at=expired_at
+            )
+            return job
+        except Exception as error:
+            print('add_and_post_job_error:', error)
             return None
         
     def save_changes(self, request):
@@ -399,6 +461,7 @@ class AdminManageJobPostingSerializer(serializers.ModelSerializer):
             job = Job.objects.get(pk=job_id)
             job.status = Job.STATUS_APPROVED
             job.rejection_reason = None
+            job.approved_at = timezone.localtime(timezone.now())
             job.save()
             return job
         except Exception as error:
@@ -412,6 +475,7 @@ class AdminManageJobPostingSerializer(serializers.ModelSerializer):
             job = Job.objects.get(pk=job_id)
             job.status = Job.STATUS_REJECTED
             job.rejection_reason = validated_data['rejection_reason']
+            job.approved_at = timezone.localtime(timezone.now())
             job.save()
             return job
         except Exception as error:

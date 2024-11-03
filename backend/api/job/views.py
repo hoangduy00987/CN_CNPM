@@ -104,7 +104,22 @@ class JobManagementMVS(viewsets.ModelViewSet):
         except Exception as error:
             print("Add job error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        
+    
+    @action(methods=['POST'], detail=False, url_path='add_and_post_job', url_name='add_and_post_job')
+    def add_and_post_job(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                job = serializer.add_and_post(request)
+                data = {}
+                data['message'] = 'Add and post job successfully.'
+                data['results'] = self.serializer_class(job).data
+                return Response(data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("Add job error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    
     @action(methods=['PATCH'], detail=False, url_path='save_changes_job', url_name='save_changes_job')
     def save_changes_job(self, request):
         try:
@@ -226,13 +241,13 @@ class NotificationListView(APIView):
         return Response(serializer.data)
     
 class JobListOfCompanyView(APIView):
-    serializer_class = JobSearchSerializer
+    serializer_class = JobListOfCompanySerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
             company = get_object_or_404(Company, user=request.user)
-            job_list = Job.objects.filter(company=company, is_deleted=False)
+            job_list = Job.objects.filter(company=company, is_deleted=False).order_by('id')
             serializer = self.serializer_class(job_list, many=True, context={'request': request})
             return Response(serializer.data)
         except Exception as error:
