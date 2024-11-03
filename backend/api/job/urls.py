@@ -19,6 +19,9 @@ get_job_posting_limit = JobPostingLimitOfCompanyMVS.as_view({
 add_job = JobManagementMVS.as_view({
     'post': 'add_job'
 })
+add_and_post_job = JobManagementMVS.as_view({
+    'post': 'add_and_post_job'
+})
 save_changes_job = JobManagementMVS.as_view({
     'patch': 'save_changes_job'
 })
@@ -57,6 +60,7 @@ urlpatterns = [
     path('get_job_posting_limit/', get_job_posting_limit, name='get_job_posting_limit'),
 
     path('add_job/', add_job, name='add_job'),
+    path('add_and_post_job/', add_and_post_job, name='add_and_post_job'),
     path('save_changes_job/', save_changes_job, name='save_changes_job'),
     path('save_and_post_job/', save_and_post_job, name='save_and_post_job'),
     path('get_job_by_id/', get_job_by_id, name='get_job_by_id'),

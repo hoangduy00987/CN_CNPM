@@ -58,3 +58,40 @@ class ContractTypeListView(APIView):
         contract_types = ContractType.objects.all()
         serializer = self.serializer_class(contract_types, many=True)
         return Response(serializer.data)
+
+
+# ======================== Admin ==========================
+class AdminManageSalaryRangeMVS(viewsets.ModelViewSet):
+    queryset = SalaryRangeItem.objects.all().order_by('id')
+    serializer_class = AdminManageSalaryRangeSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminManageYoeItemMVS(viewsets.ModelViewSet):
+    queryset = YoeItem.objects.all().order_by('id')
+    serializer_class = AdminManageYoeItemSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminManageLevelItemMVS(viewsets.ModelViewSet):
+    queryset = LevelItem.objects.all().order_by('id')
+    serializer_class = AdminManageLevelItemSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminManageSkillItemMVS(viewsets.ModelViewSet):
+    queryset = SkillItem.objects.all().order_by('id')
+    serializer_class = AdminManageSkillItemSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminManageJobTypeMVS(viewsets.ModelViewSet):
+    queryset = JobType.objects.all().order_by('id')
+    serializer_class = AdminManageJobTypeSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminManageContractTypeMVS(viewsets.ModelViewSet):
+    queryset = ContractType.objects.all().order_by('id')
+    serializer_class = AdminManageContractTypeSerializer
+    permission_classes = [IsAdminUser]
