@@ -146,6 +146,12 @@ class AdminManageCandidateMVS(viewsets.ModelViewSet):
             "number_candidate": count
         })
     
+    @action(methods=['GET'], detail=False, url_path='admin_get_list_candidate', url_name='admin_get_list_candidate')
+    def admin_get_list_candidate(self, request):
+        candidates = CandidateProfile.objects.all().order_by('id')
+        serializer = self.serializer_class(candidates, many=True, context={'request': request})
+        return Response(serializer.data)
+    
     @action(methods=['POST'], detail=False, url_path='admin_block_candidate', url_name='admin_block_candidate')
     def admin_block_candidate(self, request):
         try:
