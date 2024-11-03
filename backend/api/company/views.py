@@ -77,6 +77,12 @@ class AdminManageCompanyMVS(viewsets.ModelViewSet):
             "number_company": count
         })
     
+    @action(methods=['GET'], detail=False, url_path='admin_get_list_company', url_name='admin_get_list_company')
+    def admin_get_list_company(self, request):
+        companys = Company.objects.all().order_by('id')
+        serializer = self.serializer_class(companys, many=True, context={'request': request})
+        return Response(serializer.data)
+    
     @action(methods=['POST'], detail=False, url_path='admin_block_company', url_name='admin_block_company')
     def admin_block_company(self, request):
         try:

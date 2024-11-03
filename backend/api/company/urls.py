@@ -4,6 +4,9 @@ from .views import *
 admin_get_number_of_company = AdminManageCompanyMVS.as_view({
     'get': 'admin_get_number_of_company'
 })
+admin_get_list_company = AdminManageCompanyMVS.as_view({
+    'get': 'admin_get_list_company'
+})
 admin_block_company = AdminManageCompanyMVS.as_view({
     'post': 'admin_block_company'
 })
@@ -17,6 +20,7 @@ urlpatterns = [
 
     # Admin
     path('admin_get_number_of_company/', admin_get_number_of_company, name='admin_get_number_of_company'),
+    path('admin_get_list_company/', admin_get_list_company, name='admin_get_list_company'),
     path('admin_block_company/', admin_block_company, name='admin_block_company'),
     path('admin_activate_company/', admin_activate_company, name='admin_activate_company'),
 ]
