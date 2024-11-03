@@ -6,7 +6,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
 from rest_framework.views import APIView
 import requests
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from .serializers import *
 from ..submodels.models_recruitment import *
@@ -132,3 +132,39 @@ class CVCandidateView(APIView):
         except Exception as error:
             print("delete_cv_error: ", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ==================== Admin =======================
+class AdminManageCandidateMVS(viewsets.ModelViewSet):
+    serializer_class = AdminManageCandidateSerializer
+    permission_classes = [IsAdminUser]
+
+    @action(methods=['GET'], detail=False, url_path='admin_get_number_of_candidate', url_name='admin_get_number_of_candidate')
+    def admin_get_number_of_candidate(self, request):
+        count = CandidateProfile.objects.count()
+        return Response({
+            "number_candidate": count
+        })
+    
+    @action(methods=['POST'], detail=False, url_path='admin_block_candidate', url_name='admin_block_candidate')
+    def admin_block_candidate(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                serializer.block(request)
+                return Response({"message": "Block candidate successfully."})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=False, url_path='admin_activate_candidate', url_name='admin_activate_candidate')
+    def admin_activate_candidate(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                serializer.activate(request)
+                return Response({"message": "Activate candidate successfully."})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    

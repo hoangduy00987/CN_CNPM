@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
+from django.db.models import Q
 from rest_framework.views import APIView
 import requests
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
@@ -21,7 +22,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from ..submodels.models_user import *
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from .serializers import *
 from .filters import JobFilter
 
 class JobPagination(PageNumberPagination):
@@ -34,9 +34,8 @@ class JobSearchView(generics.ListAPIView):
     serializer_class = JobSearchSerializer
     queryset = Job.objects.filter(
         is_deleted=False, 
-        status=Job.STATUS_ACTIVE, 
-        expired_at__gt=timezone.now(), 
-        approval_status=Job.APPROVAL_APPROVED
+        status=Job.STATUS_APPROVED, 
+        # expired_at__gt=timezone.now(), 
     )
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -57,13 +56,6 @@ class JobSearchView(generics.ListAPIView):
         context.update({'request': self.request})
         return context
 
-class JobCategoryListView(APIView):
-    serializer_class = JobCategorySerializer
-    
-    def get(self, request):
-        job_categories = JobCategory.objects.all()
-        serializer = self.serializer_class(job_categories, many=True)
-        return Response(serializer.data)
 
 class JobDetailView(APIView):
     serializer_class = JobSerializer
@@ -79,81 +71,151 @@ class JobDetailView(APIView):
             print('job_not_found')
             return Response({"error": "Job not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class JobPostView(APIView):
-    serializer_class = JobPostSerializer
+class JobManagementMVS(viewsets.ModelViewSet):
+    serializer_class = JobManagementSerializer
     permission_classes = [IsAuthenticated]
 
     def get_company(self, user):
         return get_object_or_404(Company, user=user)
 
-    def post(self, request):
+    @action(methods=['GET'], detail=True, url_path='get_job_by_id', url_name='get_job_by_id')
+    def get_job_by_id(self, request):
+        try:
+            job_id = request.query_params.get('job_id')
+            job = Job.objects.get(pk=job_id)
+            serializer = self.serializer_class(job)
+            return Response(serializer.data)
+        except Job.DoesNotExist:
+            return Response({"error": "Job not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['POST'], detail=False, url_path='add_job', url_name='add_job')
+    def add_job(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                job = serializer.add(request)
+                data = {}
+                data['message'] = 'Add job successfully.'
+                data['results'] = self.serializer_class(job).data
+                return Response(data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("Add job error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(methods=['PATCH'], detail=False, url_path='save_changes_job', url_name='save_changes_job')
+    def save_changes_job(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                job = serializer.save_changes(request)
+                data = {}
+                data['message'] = 'Save changes job successfully.'
+                data['results'] = self.serializer_class(job).data
+                return Response(data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print("Save changes job error:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(methods=['PATCH'], detail=False, url_path='save_and_post_job', url_name='save_and_post_job')
+    def save_and_post_job(self, request):
         try:
             company = self.get_company(request.user)
             if not company.can_post_job():
                 return Response({
                     "error": "You have reached your job posting limit for the current period."
                 }, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-            data = request.data.copy()
-            data['company'] = company.id
-
-            serializer = self.serializer_class(data=data)
+            
+            serializer = self.serializer_class(data=request.data)
             if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                job = serializer.save_and_post(request)
+                data = {}
+                data['message'] = 'Save and post job successfully.'
+                data['results'] = self.serializer_class(job).data
+                return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            print("post job error:", error)
+            print("Save and post job error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
+# class JobPostView(APIView):
+#     serializer_class = JobPostSerializer
+#     permission_classes = [IsAuthenticated]
 
-class JobUpdateView(APIView):
-    serializer_class = JobUpdateSerializer
-    permission_classes = [IsAuthenticated]
+#     def get_company(self, user):
+#         return get_object_or_404(Company, user=user)
 
-    def get_company(self, user):
-        return get_object_or_404(Company, user=user)
+#     def post(self, request):
+#         try:
+#             company = self.get_company(request.user)
+#             if not company.can_post_job():
+#                 return Response({
+#                     "error": "You have reached your job posting limit for the current period."
+#                 }, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+#             data = request.data.copy()
+#             data['company'] = company.id
+
+#             serializer = self.serializer_class(data=data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as error:
+#             print("post job error:", error)
+#             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class JobUpdateView(APIView):
+#     serializer_class = JobUpdateSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def get_company(self, user):
+#         return get_object_or_404(Company, user=user)
     
-    def get_job(self, company, job_id):
-        return get_object_or_404(Job, company=company, pk=job_id, is_deleted=False)
+#     def get_job(self, company, job_id):
+#         return get_object_or_404(Job, company=company, pk=job_id, is_deleted=False)
 
-    def put(self, request):
-        try:
-            job_id = request.data.get('job_id')
-            if not job_id:
-                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+#     def put(self, request):
+#         try:
+#             job_id = request.data.get('job_id')
+#             if not job_id:
+#                 return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
             
-            company = self.get_company(request.user)
-            job = self.get_job(company, job_id)
-            serializer = self.serializer_class(job, data=request.data)
-            data = {}
-            if serializer.is_valid():
-                serializer.save()
-                data['message'] = 'Recruitment is updated successfully.'
-                return Response(data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as error:
-            print("updated job error:", error)
-            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+#             company = self.get_company(request.user)
+#             job = self.get_job(company, job_id)
+#             serializer = self.serializer_class(job, data=request.data)
+#             data = {}
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 data['message'] = 'Recruitment is updated successfully.'
+#                 return Response(data, status=status.HTTP_200_OK)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as error:
+#             print("updated job error:", error)
+#             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
-    def patch(self, request):
-        try:
-            job_id = request.data.get('job_id')
-            if not job_id:
-                return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+#     def patch(self, request):
+#         try:
+#             job_id = request.data.get('job_id')
+#             if not job_id:
+#                 return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
             
-            company = self.get_company(request.user)
-            job = self.get_job(company, job_id)
-            serializer = self.serializer_class(job, data=request.data, partial=True)
-            data = {}
-            if serializer.is_valid():
-                serializer.save()
-                data['message'] = 'Recruitment is updated successfully.'
-                return Response(data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as error:
-            print("updated job error:", error)
-            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+#             company = self.get_company(request.user)
+#             job = self.get_job(company, job_id)
+#             serializer = self.serializer_class(job, data=request.data, partial=True)
+#             data = {}
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 data['message'] = 'Recruitment is updated successfully.'
+#                 return Response(data, status=status.HTTP_200_OK)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as error:
+#             print("updated job error:", error)
+#             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 class NotificationListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -424,6 +486,16 @@ class AdminManageJobPostingMVS(viewsets.ModelViewSet):
     serializer_class = AdminManageJobPostingSerializer
     permission_classes = [IsAdminUser]
 
+    @action(methods=['GET'], detail=False, url_path='admin_get_number_of_job_posting', url_name='admin_get_number_of_job_posting')
+    def admin_get_number_of_job_posting(self, request):
+        count = Job.objects.filter(
+            Q(is_deleted=False) &
+            ~Q(status=Job.STATUS_DRAFT)
+        ).count()
+        return Response({
+            "number_job_posting": count
+        })
+
     @action(methods=['POST'], detail=False, url_path='admin_accept_job_posting', url_name='admin_accept_job_posting')
     def admin_accept_job_posting(self, request):
         try:
@@ -434,7 +506,7 @@ class AdminManageJobPostingMVS(viewsets.ModelViewSet):
                 data['message'] = 'Approved job posting successfully.'
                 candidates = CandidateProfile.objects.all()
                 for candidate in candidates:
-                    condition = (job.status == Job.STATUS_ACTIVE) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
+                    condition = (job.status == Job.STATUS_APPROVED) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
                     if job.is_job_matching(candidate) and condition:
                         Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}/job_id={job.id}")
                 return Response(data, status=status.HTTP_200_OK)
@@ -462,10 +534,9 @@ class AdminListJobPostingView(APIView):
     def get(self, request):
         try:
             jobs = Job.objects.filter(
-                is_deleted=False, 
-                status=Job.STATUS_ACTIVE, 
-                expired_at__gt=timezone.now(), 
-                approval_status=Job.APPROVAL_PENDING
+                Q(is_deleted=False) &
+                ~Q(status=Job.STATUS_DRAFT)
+                # Q(expired_at__gt=timezone.now())
             )
             serializer = self.serializer_class(jobs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)

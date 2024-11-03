@@ -6,7 +6,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
 from rest_framework.views import APIView
 import requests
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from .serializers import *
 from ..submodels.models_recruitment import *
@@ -64,3 +64,37 @@ class UploadCompanyAvatarView(APIView):
             print("upload company avatar error:", error)
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
+
+# ===================== Admin ========================
+class AdminManageCompanyMVS(viewsets.ModelViewSet):
+    serializer_class = AdminManageCompanySerializer
+    permission_classes = [IsAdminUser]
+
+    @action(methods=['GET'], detail=False, url_path='admin_get_number_of_company', url_name='admin_get_number_of_company')
+    def admin_get_number_of_company(self, request):
+        count = Company.objects.count()
+        return Response({
+            "number_company": count
+        })
+    
+    @action(methods=['POST'], detail=False, url_path='admin_block_company', url_name='admin_block_company')
+    def admin_block_company(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                serializer.block(request)
+                return Response({"message": "Block company successfully."})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=False, url_path='admin_activate_company', url_name='admin_activate_company')
+    def admin_activate_company(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                serializer.activate(request)
+                return Response({"message": "Activate company successfully."})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)

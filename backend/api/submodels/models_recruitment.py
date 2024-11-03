@@ -17,7 +17,7 @@ class CandidateProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     summary = models.TextField(null=True, blank=True)
-    skills  = models.CharField(max_length=300,null=True,blank=True)
+    skills = models.CharField(max_length=300,null=True,blank=True)
     work_experience = models.TextField(null=True, blank=True)
     education = models.CharField(max_length=300, blank=True, null=True)
     projects = models.TextField(null=True, blank=True)
@@ -27,11 +27,15 @@ class CandidateProfile(models.Model):
     activities = models.TextField(null=True, blank=True)
     certifications = models.TextField(null=True, blank=True)
     additional_info = models.TextField(null=True, blank=True)
+    preferred_salary = models.CharField(max_length=30, null=True, blank=True)
+    preferred_work_location = models.CharField(max_length=50, null=True, blank=True)
+    years_of_experience = models.CharField(max_length=30, null=True, blank=True)
     is_first_login = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return "Candidate: " + self.user.email + " " + self.full_name
-    
+
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
@@ -52,6 +56,7 @@ class Company(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_first_login = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
 
     def can_post_job(self):
         """Check if company can post new job or not"""
@@ -72,7 +77,8 @@ class Company(models.Model):
         end_range = timezone.make_aware(end_datetime)
         jobs_in_period = Job.objects.filter(
             company=self,
-            created_at__range=[start_range, end_range]
+            updated_at__range=[start_range, end_range],
+            status=Job.STATUS_PENDING
         ).count()
 
         # Trả về True nếu còn trong hạn mức, False nếu đã đạt giới hạn
@@ -81,46 +87,29 @@ class Company(models.Model):
     def __str__(self):
         return "Company: " + self.name
     
-class JobCategory(models.Model):
-    title = models.CharField(max_length=1000, null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_public = models.BooleanField(default=False)
-    is_deleted = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.title
-    
 class Job(models.Model):
     # Status job
     STATUS_DRAFT = 'Draft'
-    STATUS_ACTIVE = 'Active'
-    STATUS_INACTIVE = 'Inactive'
-
-    # Status when admin approval
-    APPROVAL_PENDING = 'Pending'
-    APPROVAL_APPROVED = 'Approved'
-    APPROVAL_REJECTED = 'Rejected'
+    STATUS_PENDING = 'Pending'
+    STATUS_APPROVED = 'Approved'
+    STATUS_REJECTED = 'Rejected'
 
     STATUS_CHOICES = [
         (STATUS_DRAFT, 'Draft'),
-        (STATUS_ACTIVE, 'Active'),
-        (STATUS_INACTIVE, 'Inactive'),
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
     ]
-    APPROVAL_CHOICES = [
-        (APPROVAL_PENDING, 'Pending'),
-        (APPROVAL_APPROVED, 'Approved'),
-        (APPROVAL_REJECTED, 'Rejected'),
-    ]
+
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    job_category = models.ForeignKey(JobCategory, on_delete=models.CASCADE)
+    job_type = models.CharField(max_length=30, null=True, blank=True)
     title = models.CharField(max_length=2000, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     skill_required = models.TextField(null=True, blank=True)
     benefits = models.TextField(null=True, blank=True)
-    location = models.CharField(max_length=255, null=True, blank=True)
-    salary_range = models.CharField(max_length=255, null=True, blank=True)
+    location = models.CharField(max_length=50, null=True, blank=True)
+    specific_address = models.CharField(max_length=150, null=True, blank=True)
+    salary_range = models.CharField(max_length=30, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(
@@ -131,18 +120,15 @@ class Job(models.Model):
         blank=True,
     )
     level = models.CharField(max_length=100, null=True, blank=True)
-    experience = models.CharField(max_length=255, null=True, blank=True)
+    minimum_years_of_experience = models.CharField(max_length=30, null=True, blank=True)
+    role_and_responsibilities = models.TextField(null=True, blank=True)
+    contract_type = models.CharField(max_length=30, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     interview_process = models.TextField(null=True, blank=True)
     expired_at = models.DateTimeField(null=True, blank=True)
-    approval_status = models.CharField(
-        max_length=20,
-        choices=APPROVAL_CHOICES,
-        default=APPROVAL_PENDING,
-        null=True,
-        blank=True
-    )
+    is_expired = models.BooleanField(default=False)
     rejection_reason = models.TextField(null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
 
     def is_job_matching(self, profile):
         """Check if job is matching with any skill of candidate."""
@@ -240,7 +226,7 @@ class InterviewInformation(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     time_interview = models.TimeField(null=True, blank=True)
     date_interview = models.DateField(null=True, blank=True)
-    location = models.CharField(max_length=255, null=True, blank=True)
+    address = models.CharField(max_length=255, null=True, blank=True)
     note = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

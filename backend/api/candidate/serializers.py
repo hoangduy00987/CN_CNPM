@@ -106,3 +106,48 @@ class CVCandidateSerializer(serializers.ModelSerializer):
             return None
 
 
+# =============== Admin ======================
+class AdminManageCandidateSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField()
+    class Meta:
+        model = CandidateProfile
+        fields = ['id', 'full_name', 'birthday', 'is_male', 'phone_number', 'email', 'address', 'is_active']
+
+    def get_email(self, obj):
+        return obj.user.email
+    
+    def block(self, request):
+        try:
+            email = request.data.get('email')
+            user = User.objects.get(email=email)
+            candidate = CandidateProfile.objects.get(user=user)
+            user.is_active = False
+            user.save()
+            candidate.is_active = False
+            candidate.save()
+            return candidate
+        except User.DoesNotExist:
+            return None
+        except CandidateProfile.DoesNotExist:
+            return None
+        except Exception as error:
+            print('block_candidate_error:', error)
+            return None
+        
+    def activate(self, request):
+        try:
+            email = request.data.get('email')
+            user = User.objects.get(email=email)
+            candidate = CandidateProfile.objects.get(user=user)
+            user.is_active = True
+            user.save()
+            candidate.is_active = True
+            candidate.save()
+            return candidate
+        except User.DoesNotExist:
+            return None
+        except CandidateProfile.DoesNotExist:
+            return None
+        except Exception as error:
+            print('block_candidate_error:', error)
+            return None
