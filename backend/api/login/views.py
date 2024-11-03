@@ -85,13 +85,18 @@ class GoogleView(APIView):
                     user=user, name=email
                 )
                 is_first_login = profile.is_first_login
-            
+        
+        is_admin = False
+        if user.is_superuser:
+            is_admin = True
+        
         # Create And Response token to user
         token = RefreshToken.for_user(user)
         response_data = {
             'access': str(token.access_token),
             'refresh': str(token),
-            'is_first_login': is_first_login
+            'is_first_login': is_first_login,
+            'is_admin': is_admin
         }
         response = Response(response_data,status=status.HTTP_200_OK)
 
@@ -134,10 +139,15 @@ class LoginView(APIView):
                 user = serializer.validated_data['user']
                 refresh = RefreshToken.for_user(user)
 
+                is_admin = False
+                if user.is_superuser:
+                    is_admin = True
+
                 return Response(
                     {
                         'refresh': str(refresh),
-                        'access': str(refresh.access_token)
+                        'access': str(refresh.access_token),
+                        'is_admin': is_admin
                     },
                     status=status.HTTP_200_OK
                 )

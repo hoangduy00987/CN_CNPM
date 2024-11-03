@@ -46,3 +46,45 @@ class UploadCompanyAvatarSerializer(serializers.ModelSerializer):
         except Exception as error:
             print("update_company_avatar_error: ", error)
             return None
+
+# =================== Admin =====================
+class AdminManageCompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'name', 'description', 'hotline', 'website', 'founded_year', 'is_active']
+
+    def block(self, request):
+        try:
+            email = request.data.get('email')
+            user = User.objects.get(email=email)
+            company = Company.objects.get(user=user)
+            user.is_active = False
+            user.save()
+            company.is_active = False
+            company.save()
+            return company
+        except User.DoesNotExist:
+            return None
+        except Company.DoesNotExist:
+            return None
+        except Exception as error:
+            print('block_company_error:', error)
+            return None
+        
+    def activate(self, request):
+        try:
+            email = request.data.get('email')
+            user = User.objects.get(email=email)
+            company = Company.objects.get(user=user)
+            user.is_active = True
+            user.save()
+            company.is_active = True
+            company.save()
+            return company
+        except User.DoesNotExist:
+            return None
+        except Company.DoesNotExist:
+            return None
+        except Exception as error:
+            print('block_company_error:', error)
+            return None

@@ -3,16 +3,13 @@ from ..submodels.models_recruitment import *
 from ..candidate.serializers import CandidateBasicProfileSerializer
 from django.core.mail import send_mail
 from django.conf import settings
+from ..options.serializers import *
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ['id', 'name', 'description', 'avatar', 'hotline', 'website', 'founded_year']
 
-class JobCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = JobCategory
-        fields = ['id', 'title', 'description']
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,7 +18,6 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class JobSearchSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField()
-    job_category = serializers.SerializerMethodField()
     avatar_company = serializers.SerializerMethodField()
 
     class Meta:
@@ -29,25 +25,24 @@ class JobSearchSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'company',
-            'job_category',
+            'job_type',
             'title',
             'skill_required',
             'benefits',
             'location',
+            'specific_address',
             'salary_range',
             'status',
             'level',
             'created_at',
             'updated_at',
             'avatar_company',
-            'expired_at'
+            'expired_at',
+            'is_expired'
         ]
 
     def get_company(self, obj):
         return obj.company.name
-    
-    def get_job_category(self, obj):
-        return obj.job_category.title
     
     def get_avatar_company(self, obj):
         request = self.context.get('request')
@@ -57,7 +52,6 @@ class JobSearchSerializer(serializers.ModelSerializer):
 
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
-    job_category = JobCategorySerializer(read_only=True)
     avatar_company = serializers.SerializerMethodField()
 
     class Meta:
@@ -65,21 +59,25 @@ class JobSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'company',
-            'job_category',
+            'job_type',
             'title',
             'description',
             'skill_required',
             'benefits',
             'location',
+            'specific_address',
             'salary_range',
             'status',
             'level',
-            'experience',
+            'minimum_years_of_experience',
+            'role_and_responsibilities',
+            'contract_type',
             'interview_process',
             'created_at',
             'updated_at',
             'avatar_company',
-            'expired_at'
+            'expired_at',
+            'is_expired',
         ]
 
     def get_avatar_company(self, obj):
@@ -87,17 +85,165 @@ class JobSerializer(serializers.ModelSerializer):
         if obj.company.avatar and request:
             return request.build_absolute_uri(obj.company.avatar.url)
         return None
-    
+
+class JobManagementSerializer(serializers.ModelSerializer):
+    is_posted = serializers.SerializerMethodField()
+    class Meta:
+        model = Job
+        fields = [
+            "id",
+            "job_type",
+            "title",
+            "description",
+            "skill_required",
+            "benefits",
+            "location",
+            "specific_address",
+            "salary_range",
+            "status",
+            "level",
+            "minimum_years_of_experience",
+            "role_and_responsibilities",
+            "contract_type",
+            "interview_process",
+            "expired_at",
+            "is_posted"
+        ]
+
+    def get_is_posted(self, obj):
+        if obj.status != Job.STATUS_DRAFT:
+            return True
+        return False
+
+    def add(self, request):
+        try:
+            company = Company.objects.get(user=request.user)
+            job_type = self.validated_data['job_type']
+            title = self.validated_data['title']
+            description = self.validated_data['description']
+            skill_required = self.validated_data['skill_required']
+            benefits = self.validated_data['benefits']
+            location = self.validated_data['location']
+            specific_address = self.validated_data['specific_address']
+            salary_range = self.validated_data['salary_range']
+            level = self.validated_data['level']
+            minimum_years_of_experience = self.validated_data['minimum_years_of_experience']
+            role_and_responsibilities = self.validated_data['role_and_responsibilities']
+            contract_type = self.validated_data['contract_type']
+            interview_process = self.validated_data['interview_process']
+            expired_at = self.validated_data['expired_at']
+            job = Job.objects.create(
+                company=company,
+                job_type=job_type,
+                title=title,
+                description=description,
+                skill_required=skill_required,
+                benefits=benefits,
+                location=location,
+                specific_address=specific_address,
+                salary_range=salary_range,
+                status=Job.STATUS_DRAFT,
+                level=level,
+                minimum_years_of_experience=minimum_years_of_experience,
+                role_and_responsibilities=role_and_responsibilities,
+                contract_type=contract_type,
+                interview_process=interview_process,
+                expired_at=expired_at
+            )
+            return job
+        except Exception as error:
+            print('first_save_job_error:', error)
+            return None
+        
+    def save_changes(self, request):
+        try:
+            company = Company.objects.get(user=request.user)
+            job_type = self.validated_data['job_type']
+            title = self.validated_data['title']
+            description = self.validated_data['description']
+            skill_required = self.validated_data['skill_required']
+            benefits = self.validated_data['benefits']
+            location = self.validated_data['location']
+            specific_address = self.validated_data['specific_address']
+            salary_range = self.validated_data['salary_range']
+            level = self.validated_data['level']
+            minimum_years_of_experience = self.validated_data['minimum_years_of_experience']
+            role_and_responsibilities = self.validated_data['role_and_responsibilities']
+            contract_type = self.validated_data['contract_type']
+            interview_process = self.validated_data['interview_process']
+            expired_at = self.validated_data['expired_at']
+            job_id = request.data.get('job_id')
+            job = Job.objects.get(pk=job_id, company=company)
+            job.job_type = job_type
+            job.title = title
+            job.description = description
+            job.skill_required = skill_required
+            job.benefits = benefits
+            job.location = location
+            job.specific_address = specific_address
+            job.salary_range = salary_range
+            job.level = level
+            job.minimum_years_of_experience = minimum_years_of_experience
+            job.role_and_responsibilities = role_and_responsibilities
+            job.contract_type = contract_type
+            job.interview_process = interview_process
+            job.expired_at = expired_at
+            job.save()
+            return job
+        except Exception as error:
+            print('save_changes_job_error:', error)
+            return None
+        
+    def save_and_post(self, request):
+        try:
+            company = Company.objects.get(user=request.user)
+            job_type = self.validated_data['job_type']
+            title = self.validated_data['title']
+            description = self.validated_data['description']
+            skill_required = self.validated_data['skill_required']
+            benefits = self.validated_data['benefits']
+            location = self.validated_data['location']
+            specific_address = self.validated_data['specific_address']
+            salary_range = self.validated_data['salary_range']
+            level = self.validated_data['level']
+            minimum_years_of_experience = self.validated_data['minimum_years_of_experience']
+            role_and_responsibilities = self.validated_data['role_and_responsibilities']
+            contract_type = self.validated_data['contract_type']
+            interview_process = self.validated_data['interview_process']
+            expired_at = self.validated_data['expired_at']
+            job_id = request.data.get('job_id')
+            job = Job.objects.get(pk=job_id, company=company)
+            job.job_type = job_type
+            job.title = title
+            job.description = description
+            job.skill_required = skill_required
+            job.benefits = benefits
+            job.location = location
+            job.specific_address = specific_address
+            job.salary_range = salary_range
+            job.level = level
+            job.minimum_years_of_experience = minimum_years_of_experience
+            job.role_and_responsibilities = role_and_responsibilities
+            job.contract_type = contract_type
+            job.interview_process = interview_process
+            job.expired_at = expired_at
+            job.status = Job.STATUS_PENDING
+            job.save()
+            return job
+        except Exception as error:
+            print('save_and_post_job_error:', error)
+            return None
+
 class JobPostSerializer(serializers.ModelSerializer):
     company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all())
-    job_category = serializers.PrimaryKeyRelatedField(queryset=JobCategory.objects.all())
+    job_type = serializers.PrimaryKeyRelatedField(queryset=JobType.objects.all())
 
     class Meta:
         model = Job
         fields = [
             'id',
             'company',
-            'job_category',
+            'job_type',
             'title',
             'description',
             'skill_required',
@@ -106,18 +252,18 @@ class JobPostSerializer(serializers.ModelSerializer):
             'salary_range',
             'status',
             'level',
-            'experience',
+            'minimum_years_of_experience',
             'interview_process',
             'expired_at'
         ]
 
-    def validate_salary_range(self, value):
-        # Salary range format: min-max USD
-        import re
-        pattern = r'^\d+-\d+ USD$'
-        if not re.match(pattern, value):
-            raise serializers.ValidationError("Salary range must be in 'min-max USD', example: '1000-2000 USD'.")
-        return value
+    # def validate_salary_range(self, value):
+    #     # Salary range format: min-max USD
+    #     import re
+    #     pattern = r'^\d+-\d+ USD$'
+    #     if not re.match(pattern, value):
+    #         raise serializers.ValidationError("Salary range must be in 'min-max USD', example: '1000-2000 USD'.")
+    #     return value
     
     def create(self, request):
         try:
@@ -131,14 +277,14 @@ class JobPostSerializer(serializers.ModelSerializer):
 
 class JobUpdateSerializer(serializers.ModelSerializer):
     company = serializers.PrimaryKeyRelatedField(read_only=True)
-    job_category = serializers.PrimaryKeyRelatedField(queryset=JobCategory.objects.all())
+    job_type = serializers.PrimaryKeyRelatedField(queryset=JobType.objects.all())
 
     class Meta:
         model = Job
         fields = [
             'id',
             'company',
-            'job_category',
+            'job_type',
             'title',
             'description',
             'skill_required',
@@ -147,7 +293,7 @@ class JobUpdateSerializer(serializers.ModelSerializer):
             'salary_range',
             'status',
             'level',
-            'experience',
+            'minimum_years_of_experience',
             'interview_process',
             'expired_at'
         ]
@@ -245,13 +391,13 @@ class JobPostingLimitOfCompanySerializer(serializers.ModelSerializer):
 class AdminManageJobPostingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
-        fields = ['id', 'approval_status', 'rejection_reason']
+        fields = ['id', 'rejection_reason']
 
     def accept_job_posting(self, request):
         try:
             job_id = request.data.get('job_id')
             job = Job.objects.get(pk=job_id)
-            job.approval_status = Job.APPROVAL_APPROVED
+            job.status = Job.STATUS_APPROVED
             job.rejection_reason = None
             job.save()
             return job
@@ -264,7 +410,7 @@ class AdminManageJobPostingSerializer(serializers.ModelSerializer):
             job_id = request.data.get('job_id')
             validated_data = self.validated_data
             job = Job.objects.get(pk=job_id)
-            job.approval_status = Job.APPROVAL_REJECTED
+            job.status = Job.STATUS_REJECTED
             job.rejection_reason = validated_data['rejection_reason']
             job.save()
             return job
@@ -274,7 +420,7 @@ class AdminManageJobPostingSerializer(serializers.ModelSerializer):
 
 class AdminListJobPostingSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
-    job_category = JobCategorySerializer(read_only=True)
+    job_type = JobTypeSerializer(read_only=True)
     avatar_company = serializers.SerializerMethodField()
 
     class Meta:
@@ -282,7 +428,7 @@ class AdminListJobPostingSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'company',
-            'job_category',
+            'job_type',
             'title',
             'description',
             'skill_required',
@@ -291,13 +437,12 @@ class AdminListJobPostingSerializer(serializers.ModelSerializer):
             'salary_range',
             'status',
             'level',
-            'experience',
+            'minimum_years_of_experience',
             'interview_process',
             'created_at',
             'updated_at',
             'avatar_company',
             'expired_at',
-            'approval_status',
             'rejection_reason'
         ]
 
