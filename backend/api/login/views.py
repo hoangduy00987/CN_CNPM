@@ -86,6 +86,11 @@ class GoogleView(APIView):
                 )
                 is_first_login = profile.is_first_login
         
+        if not user.is_active:
+            return Response({
+                "error": "Your account was blocked."
+            }, status=status.HTTP_423_LOCKED)
+        
         is_admin = False
         if user.is_superuser:
             is_admin = True
@@ -136,7 +141,17 @@ class LoginView(APIView):
         try:
             serializer = LoginSerializers(data=request.data)
             if serializer.is_valid():
-                user = serializer.validated_data['user']
+                user = serializer.login_user(request)
+                if user is None:
+                    return Response({
+                        "error": "Invalid credentials."
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                if not user.is_active:
+                    return Response({
+                        "error": "Your account was blocked."
+                    }, status=status.HTTP_423_LOCKED)
+                
                 refresh = RefreshToken.for_user(user)
 
                 is_admin = False

@@ -54,7 +54,6 @@ class CandidateAdvancedProfileSerializer(serializers.ModelSerializer):
     def update(self, request):
         try:
             validated_data = self.validated_data
-            print(">>>", validated_data)
             additional_info = request.data.get('other_information')
             profile = CandidateProfile.objects.get(user=request.user)
             fields_to_update = ['summary', 'skills', 'work_experience', 'education', 'projects']

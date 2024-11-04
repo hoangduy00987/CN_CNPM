@@ -49,9 +49,13 @@ class UploadCompanyAvatarSerializer(serializers.ModelSerializer):
 
 # =================== Admin =====================
 class AdminManageCompanySerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField()
     class Meta:
         model = Company
-        fields = ['id', 'name', 'description', 'hotline', 'website', 'founded_year', 'is_active']
+        fields = ['id', 'name', 'description', 'hotline', 'website', 'founded_year', 'is_active', 'email']
+
+    def get_email(self, obj):
+        return obj.user.email
 
     def block(self, request):
         try:
