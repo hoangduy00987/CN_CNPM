@@ -70,21 +70,38 @@ class LoginSerializers(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
-    def validate(self, data):
-        username = data.get('username')
-        password = data.get('password')
+    # def validate(self, data):
+    #     username = data.get('username')
+    #     password = data.get('password')
 
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if user:
-                if not user.is_active:
-                    raise AuthenticationFailed('User account is disabled.')
-                return {'user': user}
-            else:
-                raise AuthenticationFailed('Invalid credentials.')
-        else:
-            raise serializers.ValidationError('Must include "username_or_email" and "password".')
-
+    #     if username and password:
+    #         user = authenticate(username=username, password=password)
+    #         if user:
+    #             if not user.is_active:
+    #                 raise AuthenticationFailed('User account is disabled.')
+    #             return {'user': user}
+    #         else:
+    #             raise AuthenticationFailed('Invalid credentials.')
+    #     else:
+    #         raise serializers.ValidationError('Must include "username_or_email" and "password".')
+    
+    def login_user(self, request):
+        try:
+            username = self.validated_data['username']
+            password = self.validated_data['password']
+            user = User.objects.get(username=username)
+            if user.check_password(password):
+                return user
+            return None
+        except User.DoesNotExist:
+            try:
+                user = User.objects.get(email=username)
+                if user.check_password(password):
+                    return user
+                return None
+            except User.DoesNotExist:
+                print("Invalid credentials")
+                return None
     
 class ChangePasswordSerializers(serializers.Serializer):
     old_password = serializers.CharField(required=True, write_only=True)
