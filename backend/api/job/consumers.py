@@ -168,3 +168,30 @@ class JobExpiryNotificationConsumer(AsyncWebsocketConsumer):
             'job_title': job_title
         }))
 
+class ApplicationSeenConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        # Tham gia nhóm thông báo cá nhân
+        self.user = self.scope['user']
+        if self.user.is_authenticated:
+            self.group_name = f'user_application_seen_{self.user.id}'  # Mỗi người dùng có một nhóm riêng
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            await self.accept()
+        else:
+            # Từ chối kết nối nếu người dùng chưa xác thực
+            await self.close()
+
+    async def disconnect(self, close_code):
+        # Xử lý khi kết nối bị ngắt
+        await self.channel_layer.group_discard(
+            self.group_name,
+            self.channel_name
+        )
+
+    async def application_seen(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'message': message
+        }))

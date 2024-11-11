@@ -18,6 +18,11 @@ urlpatterns = [
     path('profile/', CompanyProfileView.as_view(), name='company_profile'),
     path('upload-avatar/', UploadCompanyAvatarView.as_view(), name='upload_company_avatar'),
 
+    # Public
+    path('list_company/', ListCompanyView.as_view(), name='list_company'),
+    path('company_information/', CompanyInformationView.as_view(), name='company_information'),
+    path('top_outstanding_companies/', TopOutstandingCompaniesView.as_view(), name='top_outstanding_companies'),
+
     # Admin
     path('admin_get_number_of_company/', admin_get_number_of_company, name='admin_get_number_of_company'),
     path('admin_get_list_company/', admin_get_list_company, name='admin_get_list_company'),

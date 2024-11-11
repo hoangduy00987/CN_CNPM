@@ -30,6 +30,7 @@ class CandidateProfile(models.Model):
     preferred_salary = models.CharField(max_length=30, null=True, blank=True)
     preferred_work_location = models.CharField(max_length=50, null=True, blank=True)
     years_of_experience = models.CharField(max_length=30, null=True, blank=True)
+    is_seeking_job = models.BooleanField(default=False)
     is_first_login = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
 
@@ -101,7 +102,7 @@ class Job(models.Model):
         (STATUS_REJECTED, 'Rejected'),
     ]
 
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_w_job')
     job_type = models.CharField(max_length=30, null=True, blank=True)
     title = models.CharField(max_length=2000, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -195,7 +196,7 @@ class Application(models.Model):
     ]
 
     candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='job_w_application')
     applied_at = models.DateTimeField(null=True, blank=True)
     cv = models.FileField(upload_to="CVs/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -208,13 +209,14 @@ class Application(models.Model):
         null=True,
         blank=True
     )
+    is_seen_by_recruiter = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.candidate.full_name + " " + self.job.title
 
 class JobFollow(models.Model):
     candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='job_w_follow')
     followed_at = models.DateTimeField(auto_now_add=True)
     is_notified = models.BooleanField(default=False)
     

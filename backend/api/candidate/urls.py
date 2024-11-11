@@ -20,6 +20,9 @@ urlpatterns = [
     path('upload-avatar/', UploadCandidateAvatarView.as_view(), name='upload_candidate_avatar'),
     path('manage_cv/', CVCandidateView.as_view(), name='manage_cv'),
 
+    # Public
+    path('candidate_advanced_profile_for_recruiter/', CandidateAdvancedProfileForRecruiterView.as_view(), name='candidate_advanced_profile_for_recruiter'),
+
     # Admin
     path('admin_get_number_of_candidate/', admin_get_number_of_candidate, name='admin_get_number_of_candidate'),
     path('admin_get_list_candidate/', admin_get_list_candidate, name='admin_get_list_candidate'),

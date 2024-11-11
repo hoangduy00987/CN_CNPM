@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
-from django.db.models import Q
+from django.db.models import Q, Count
 from rest_framework.views import APIView
 import requests
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
@@ -55,6 +55,60 @@ class JobSearchView(generics.ListAPIView):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
+
+class PublicJobListOfCompanyView(generics.ListAPIView):
+    serializer_class = PublicJobListOfCompanySerializer
+    pagination_class = JobPagination
+
+    def get(self, request):
+        try:
+            company_id = request.query_params.get('company_id')
+            company = Company.objects.get(pk=company_id)
+            jobs_list = Job.objects.filter(company=company)
+
+            page = self.paginate_queryset(jobs_list)
+            if page is not None:
+                serializer = self.serializer_class(page, many=True, context={'request': request})
+                return self.get_paginated_response(serializer.data)
+            
+            serializer = self.serializer_class(jobs_list, many=True, context={'request': request})
+            return Response(serializer.data)
+        except Company.DoesNotExist:
+            print("company not found")
+            return Response({"error": "Company not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class TopOutstandingJobsView(APIView):
+    serializer_class = JobSearchSerializer
+
+    def get(self, request):
+        try:
+            top_jobs = Job.objects.filter(
+                is_deleted=False,
+                status=Job.STATUS_APPROVED
+            ).annotate(
+                follow_count=Count('job_w_follow'),
+                application_count=Count('job_w_application')
+            ).order_by('-follow_count', '-application_count')[:10]
+            serializer = self.serializer_class(top_jobs, many=True, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("error filter top outstanding jobs:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TopNewJobsView(APIView):
+    serializer_class = JobSearchSerializer
+
+    def get(self, request):
+        try:
+            top_jobs = Job.objects.filter(
+                is_deleted=False,
+                status=Job.STATUS_APPROVED
+            ).order_by('-created_at')[:10]
+            serializer = self.serializer_class(top_jobs, many=True, context={'request': request})
+            return Response(serializer.data)
+        except Exception as error:
+            print("error filter top new jobs:", error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class JobDetailView(APIView):
@@ -369,6 +423,18 @@ class ApplicationInforMVS(viewsets.ModelViewSet):
             data['is_applied'] = True
             return Response(data, status=status.HTTP_200_OK)
         return Response(data, status=status.HTTP_200_OK)
+    
+    @action(methods=['POST'], detail=False, url_path='view_cv_in_application', url_name='view_cv_in_application')
+    def view_cv_in_application(self, request):
+        try:
+            application_id = request.query_params.get('application_id')
+            application = Application.objects.get(pk=application_id)
+            application.is_seen_by_recruiter = True
+            application.save()
+            return Response({"message": "Recruiter has seen application."}, status=status.HTTP_200_OK)
+        except Application.DoesNotExist:
+            print("application not found")
+            return Response({"error": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class ApproveApplicationView(APIView):
     serializer_class = ApplyJobSerializer
@@ -384,15 +450,17 @@ class ApproveApplicationView(APIView):
             application = Application.objects.get(pk=application_id)
             if stt.lower() == 'accepted':
                 application.status = Application.STATUS_ACCEPTED
+                notified_at = datetime.strftime(timezone.localtime(timezone.now()), "%Y-%m-%d %H:%M:%S")
                 Notification.objects.create(
                     user=application.candidate.user,
-                    message=f'{application.job.company.name} vừa chấp nhận hồ sơ của bạn./job_id={application.job.id}'
+                    message=f'Đơn ứng tuyển ở công việc {application.job.title} đã được phản hồi./application_id={application.id}/time: {notified_at}'
                 )
             else:
                 application.status = Application.STATUS_REJECTED
+                notified_at = datetime.strftime(timezone.localtime(timezone.now()), "%Y-%m-%d %H:%M:%S")
                 Notification.objects.create(
                     user=application.candidate.user,
-                    message=f'{application.job.company.name} vừa từ chối hồ sơ của bạn./job_id={application.job.id}'
+                    message=f'Đơn ứng tuyển ở công việc {application.job.title} đã được phản hồi./application_id={application.id}/time:{notified_at}'
                 )
             application.save()
             return Response({
