@@ -34,6 +34,7 @@ class JobSearchSerializer(serializers.ModelSerializer):
             'salary_range',
             'status',
             'level',
+            'contract_type',
             'created_at',
             'updated_at',
             'avatar_company',
@@ -50,6 +51,35 @@ class JobSearchSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.company.avatar.url)
         return None
 
+class PublicJobListOfCompanySerializer(serializers.ModelSerializer):
+    avatar_company = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Job
+        fields = [
+            'id',
+            'job_type',
+            'title',
+            'skill_required',
+            'location',
+            'specific_address',
+            'salary_range',
+            'status',
+            'level',
+            'contract_type',
+            'created_at',
+            'updated_at',
+            'avatar_company',
+            'expired_at',
+            'is_expired',
+        ]
+
+    def get_avatar_company(self, obj):
+        request = self.context.get('request')
+        if obj.company.avatar and request:
+            return request.build_absolute_uri(obj.company.avatar.url)
+        return None
+    
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     avatar_company = serializers.SerializerMethodField()
@@ -386,7 +416,7 @@ class ApplicationInforSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Application
-        fields = ['id', 'candidate', 'cv', 'applied_at', 'is_urgent', 'status']
+        fields = ['id', 'candidate', 'cv', 'applied_at', 'is_urgent', 'status', 'is_seen_by_recruiter']
 
 class JobFollowSerializer(serializers.ModelSerializer):
     class Meta:
@@ -434,7 +464,7 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
             )
             send_mail(
                 subject=f'Interview information from {company.name}',
-                message=f'We are very happy to invite you to the upcoming interview\nTime: {time_interview} {date_interview}\nLocation: {location}\nNote: {note}',
+                message=f'We are very happy to invite you to the upcoming interview<br>Time: {time_interview} {date_interview}<br>Location: {location}<br>Note: {note}',
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=[candidate.user.email],
                 fail_silently=False

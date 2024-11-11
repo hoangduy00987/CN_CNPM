@@ -47,6 +47,33 @@ class UploadCompanyAvatarSerializer(serializers.ModelSerializer):
             print("update_company_avatar_error: ", error)
             return None
 
+# =================== Public ====================
+class ListCompanySerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Company
+        fields = ['id', 'name', 'description', 'avatar']
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
+class CompanyInformationSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Company
+        fields = ['id', 'name', 'description', 'avatar', 'hotline', 'website', 'founded_year']
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
 # =================== Admin =====================
 class AdminManageCompanySerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()

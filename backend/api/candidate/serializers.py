@@ -36,7 +36,7 @@ class CandidateAdvancedProfileSerializer(serializers.ModelSerializer):
     other_information = serializers.SerializerMethodField()
     class Meta:
         model = CandidateProfile
-        fields = ['summary', 'skills', 'work_experience', 'education', 'projects', 'other_information']
+        fields = ['summary', 'skills', 'work_experience', 'education', 'projects', 'other_information', 'is_seeking_job']
 
     def get_other_information(self, obj):
         data = {}
@@ -56,7 +56,7 @@ class CandidateAdvancedProfileSerializer(serializers.ModelSerializer):
             validated_data = self.validated_data
             additional_info = request.data.get('other_information')
             profile = CandidateProfile.objects.get(user=request.user)
-            fields_to_update = ['summary', 'skills', 'work_experience', 'education', 'projects']
+            fields_to_update = ['summary', 'skills', 'work_experience', 'education', 'projects', 'is_seeking_job']
             fields_additional_info = ['languages', 'interests', 'references', 
                                       'activities', 'certifications', 'additional_info',
                                       'preferred_salary', 'preferred_work_location', 'years_of_experience']
@@ -109,6 +109,50 @@ class CVCandidateSerializer(serializers.ModelSerializer):
             print("update_candidate_cv_error: ", error)
             return None
 
+
+# =============== Public =====================
+class CandidateAdvancedProfileForRecruiterSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    other_information = serializers.SerializerMethodField()
+    class Meta:
+        model = CandidateProfile
+        fields = [
+            'id', 
+            'full_name', 
+            'avatar', 
+            'email', 
+            'cv', 
+            'summary', 
+            'skills', 
+            'work_experience', 
+            'education', 
+            'projects', 
+            'other_information',
+            'is_seeking_job'
+        ]
+    
+    def get_email(self, obj):
+        return obj.user.email
+    
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
+    def get_other_information(self, obj):
+        data = {}
+        data['languages'] = obj.languages
+        data['interests'] = obj.interests
+        data['references'] = obj.references
+        data['activities'] = obj.activities
+        data['certifications'] = obj.certifications
+        data['preferred_salary'] = obj.preferred_salary
+        data['preferred_work_location'] = obj.preferred_work_location
+        data['years_of_experience'] = obj.years_of_experience
+        data['additional_info'] = obj.additional_info
+        return data
 
 # =============== Admin ======================
 class AdminManageCandidateSerializer(serializers.ModelSerializer):

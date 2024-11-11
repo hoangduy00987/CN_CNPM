@@ -134,6 +134,21 @@ class CVCandidateView(APIView):
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+# ==================== Public ======================
+class CandidateAdvancedProfileForRecruiterView(APIView):
+    serializer_class = CandidateAdvancedProfileForRecruiterSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            candidate_id = request.query_params.get('candidate_id')
+            candidate = CandidateProfile.objects.get(pk=candidate_id)
+            serializer = self.serializer_class(candidate, context={'request': request})
+            return Response(serializer.data)
+        except CandidateProfile.DoesNotExist:
+            print("candidate not found")
+            return Response({"error": "Candidate not found."}, status=status.HTTP_404_NOT_FOUND)
+
 # ==================== Admin =======================
 class AdminManageCandidateMVS(viewsets.ModelViewSet):
     serializer_class = AdminManageCandidateSerializer

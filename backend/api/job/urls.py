@@ -13,6 +13,9 @@ get_list_candidate_applied_for_job = ApplicationInforMVS.as_view({
 check_candidate_applied_job = ApplicationInforMVS.as_view({
     'get': 'check_candidate_applied_job'
 })
+view_cv_in_application = ApplicationInforMVS.as_view({
+    'post': 'view_cv_in_application'
+})
 get_job_posting_limit = JobPostingLimitOfCompanyMVS.as_view({
     'get': 'get_job_posting_limit'
 })
@@ -52,6 +55,7 @@ urlpatterns = [
     path('get_list_application_candidate/', get_list_application_candidate, name='get_list_application_candidate'),
     path('get_list_candidate_applied_for_job/', get_list_candidate_applied_for_job, name='get_list_candidate_applied_for_job'),
     path('check_candidate_applied_job/', check_candidate_applied_job, name='check_candidate_applied_job'),
+    path('view_cv_in_application/', view_cv_in_application, name='view_cv_in_application'),
     path('approve_application/', ApproveApplicationView.as_view(), name='approve_application'),
     path('notifications_job/', NotificationListView.as_view(), name='notification-list'),
     path('follow/', FollowJobView.as_view(), name='follow_job'),
@@ -67,6 +71,11 @@ urlpatterns = [
     # path('update_job/', JobUpdateView.as_view(), name='update_job'),
     # path('post_job/', JobPostView.as_view(), name='post_job'),
     path('hide_job/', HideJobView.as_view(), name='hide_job'),
+
+    # Public
+    path('job_list_of_company_public/', PublicJobListOfCompanyView.as_view(), name='job_list_of_company_public'),
+    path('top_outstanding_jobs/', TopOutstandingJobsView.as_view(), name='top_outstanding_jobs'),
+    path('top_new_jobs/', TopNewJobsView.as_view(), name='top_new_jobs'),
 
     # Admin manage job posting
     path('admin_get_number_of_job_posting/', admin_get_number_of_job_posting, name='admin_get_number_of_job_posting'),

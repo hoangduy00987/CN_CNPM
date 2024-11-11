@@ -89,3 +89,17 @@ def send_new_notification(sender, instance, created, **kwargs):
             }
         )
         print('Da gui thong bao toi nguoi dung')
+
+@receiver(post_save, sender=Application)
+def handle_application_seen(sender, instance, created, **kwargs):
+    if not created:
+        old_instance = Application.objects.get(pk=instance.pk)
+        if not old_instance.is_seen_by_recruiter and instance.is_seen_by_recruiter:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'user_application_seen_{instance.candidate.user.id}',
+                {
+                    'type': 'application_seen',
+                    'message': f'Recruiter has seen your application./application_id={instance.id}'
+                }
+            )
