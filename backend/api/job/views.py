@@ -23,6 +23,7 @@ from ..submodels.models_user import *
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from .filters import JobFilter
+from datetime import datetime
 
 class JobPagination(PageNumberPagination):
     page_size = 10
@@ -453,14 +454,14 @@ class ApproveApplicationView(APIView):
                 notified_at = datetime.strftime(timezone.localtime(timezone.now()), "%Y-%m-%d %H:%M:%S")
                 Notification.objects.create(
                     user=application.candidate.user,
-                    message=f'Đơn ứng tuyển ở công việc {application.job.title} đã được phản hồi./application_id={application.id}/time: {notified_at}'
+                    message=f'Đơn ứng tuyển ở công việc {application.job.title} đã được phản hồi./application_id={application.id}/job_id={application.job.id}/time:{notified_at}'
                 )
             else:
                 application.status = Application.STATUS_REJECTED
                 notified_at = datetime.strftime(timezone.localtime(timezone.now()), "%Y-%m-%d %H:%M:%S")
                 Notification.objects.create(
                     user=application.candidate.user,
-                    message=f'Đơn ứng tuyển ở công việc {application.job.title} đã được phản hồi./application_id={application.id}/time:{notified_at}'
+                    message=f'Đơn ứng tuyển ở công việc {application.job.title} đã được phản hồi./application_id={application.id}/job_id={application.job.id}/time:{notified_at}'
                 )
             application.save()
             return Response({
