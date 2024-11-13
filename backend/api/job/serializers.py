@@ -4,6 +4,7 @@ from ..candidate.serializers import CandidateBasicProfileSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from ..options.serializers import *
+from django.core.mail import EmailMessage
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -443,7 +444,7 @@ class ListJobFollowSerializer(serializers.ModelSerializer):
 class InterviewInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewInformation
-        fields = ['id', 'time_interview', 'date_interview', 'location', 'note']
+        fields = ['id', 'time_interview', 'date_interview', 'address', 'note']
 
     def add(self, request):
         try:
@@ -452,23 +453,24 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
             company = Company.objects.get(user=request.user)
             time_interview = self.validated_data['time_interview']
             date_interview = self.validated_data['date_interview']
-            location = self.validated_data['location']
+            address = self.validated_data['address']
             note = self.validated_data['note']
             model = InterviewInformation.objects.create(
                 candidate=candidate,
                 company=company,
                 time_interview=time_interview,
                 date_interview=date_interview,
-                location=location,
+                address=address,
                 note=note
             )
-            send_mail(
+            interview_email = EmailMessage(
                 subject=f'Interview information from {company.name}',
-                message=f'We are very happy to invite you to the upcoming interview<br>Time: {time_interview} {date_interview}<br>Location: {location}<br>Note: {note}',
+                body=f'We are very happy to invite you to the upcoming interview<br>Time: {time_interview} {date_interview}<br>Address: {address}<br>Note: {note}',
                 from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[candidate.user.email],
-                fail_silently=False
+                to=[candidate.user.email]
             )
+            interview_email.content_subtype = "html"
+            interview_email.send()
             return model
         except Exception as error:
             print('add_interview_error:', error)

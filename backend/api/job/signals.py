@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import send_mail
 from django.conf import settings
+from datetime import datetime
 
 # @receiver(post_save, sender=Job)
 # def send_websocket_notification(sender, instance, **kwargs):
@@ -27,11 +28,12 @@ from django.conf import settings
 def send_notification_when_new_apply(sender, instance, created, **kwargs):
     if created:
         channel_layer = get_channel_layer()
+        notified_at = datetime.strftime(timezone.localtime(timezone.now()), "%Y-%m-%d %H:%M:%S")
         async_to_sync(channel_layer.group_send)(
             f'company_new_apply_{instance.job.company.user.id}',
             {
                 'type': 'add_new_application',
-                'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out./job_id={instance.job.id}'
+                'message': f'{instance.candidate.full_name} has just applied for {instance.job.title}. Please check it out./application_id={instance.id}/job_id={instance.job.id}/time:{notified_at}'
             }
         )
 
@@ -100,10 +102,11 @@ def handle_application_seen(sender, instance, created, **kwargs):
     if not created:
         if hasattr(instance, '_old_is_seen_by_recruiter') and not instance._old_is_seen_by_recruiter and instance.is_seen_by_recruiter:
             channel_layer = get_channel_layer()
+            notified_at = datetime.strftime(timezone.localtime(timezone.now()), "%Y-%m-%d %H:%M:%S")
             async_to_sync(channel_layer.group_send)(
                 f'user_application_seen_{instance.candidate.user.id}',
                 {
                     'type': 'application_seen',
-                    'message': f'Recruiter has seen your application./application_id={instance.id}'
+                    'message': f'Recruiter has seen your application./application_id={instance.id}/job_id={instance.job.id}/time:{notified_at}'
                 }
             )
