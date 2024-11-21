@@ -61,6 +61,7 @@ urlpatterns = [
     path('follow/', FollowJobView.as_view(), name='follow_job'),
     path('user-get-list-follow-job/', ListJobFollowOfUserView.as_view(), name='user_get_list_follow_job'),
     path('add-interview-information/', AddInterviewInformationView.as_view(), name='add_interview_infor'),
+    path('interview-response/', interview_response, name='interview_response'),
     path('get_job_posting_limit/', get_job_posting_limit, name='get_job_posting_limit'),
 
     path('add_job/', add_job, name='add_job'),

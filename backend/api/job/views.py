@@ -18,6 +18,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.http import JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from ..submodels.models_user import *
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -547,6 +548,18 @@ class AddInterviewInformationView(APIView):
         except Exception as error:
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
+def interview_response(request):
+    response = request.GET.get('response')
+
+    if response == 'accept':
+        message = "Thank you for accepting the interview!"
+    elif response == 'refuse':
+        message = "We understand that you are unable to attend the interview."
+    else:
+        return JsonResponse({"error": "Invalid response."}, status=400)
+    
+    return JsonResponse({"message": message})
+
 class JobPostingLimitOfCompanyMVS(viewsets.ModelViewSet):
     serializer_class = JobPostingLimitOfCompanySerializer
     permission_classes = [IsAuthenticated]
@@ -588,10 +601,10 @@ class AdminManageJobPostingMVS(viewsets.ModelViewSet):
             if serializer.is_valid():
                 job = serializer.accept_job_posting(request)
                 data['message'] = 'Approved job posting successfully.'
-                candidates = CandidateProfile.objects.all()
+                candidates = CandidateProfile.objects.filter(is_seeking_job=True, is_active=True)
                 for candidate in candidates:
                     condition = (job.status == Job.STATUS_APPROVED) and (job.expired_at > timezone.now()) and (job.is_deleted == False)
-                    if job.is_job_matching(candidate) and condition:
+                    if (job.is_job_matching_skill(candidate) or job.is_job_matching_salary(candidate) or job.is_job_matching_location(candidate) or job.is_job_matching_yoe(candidate)) and condition:
                         Notification.objects.create(user=candidate.user, message=f"Có công việc mới phù hợp: {job.title}/job_id={job.id}")
                 return Response(data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

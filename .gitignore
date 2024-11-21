@@ -19,3 +19,5 @@ static/
 backend/api/migrations/
 media/
 staticfiles/
+
+credentials/

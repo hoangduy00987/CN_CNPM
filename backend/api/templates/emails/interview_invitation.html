@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interview Invitation</title>
+    <style>
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin: 10px 5px;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+      .accept {
+        background-color: #4caf50; /* Green */
+      }
+      .refuse {
+        background-color: #f44336; /* Red */
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Interview Invitation for {{ job_title }}</h2>
+    <p>Dear {{ candidate_name }},</p>
+
+    <p>
+      We are pleased to inform you that you have been shortlisted for an
+      interview for the <strong>{{ job_title }}</strong> at
+      <strong>{{ company_name }}</strong>. We were impressed by your application
+      and would like to discuss your qualifications further.
+    </p>
+
+    <h3>Interview Details:</h3>
+    <ul>
+      <li><strong>Date:</strong> {{ interview_date }}</li>
+      <li><strong>Time:</strong> {{ interview_time }}</li>
+      <li>
+        {% if is_online %}
+        <strong>Link:</strong>
+        <a href="{{ interview_location }}">{{ interview_location }}</a>
+        {% else %}
+        <strong>Location:</strong>
+        {{ interview_location }} {% endif %}
+      </li>
+      <li><strong>Duration:</strong> Approximately {{ duration }} minutes</li>
+    </ul>
+
+    <!-- <p>Please confirm your availability for the scheduled interview:</p>
+    <a href="{{ accept_url }}" class="button accept">Accept</a>
+    <a href="{{ refuse_url }}" class="button refuse">Refuse</a> -->
+
+    <p>
+      If you have any questions or need to reschedule, don't hesitate to reach
+      out.
+    </p>
+
+    <p>We look forward to speaking with you soon!</p>
+
+    <p>Best regards,</p>
+    <p>
+      {{ sender_name }}<br />
+      {{ sender_position }}<br />
+      {{ company_name }}<br />
+      {{ contact_information }}
+    </p>
+  </body>
+</html>

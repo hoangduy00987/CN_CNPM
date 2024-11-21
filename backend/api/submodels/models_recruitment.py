@@ -131,7 +131,7 @@ class Job(models.Model):
     rejection_reason = models.TextField(null=True, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
 
-    def is_job_matching(self, profile):
+    def is_job_matching_skill(self, profile):
         """Check if job is matching with any skill of candidate."""
         if profile.skills:
             skills_list = [skill.strip().lower() for skill in profile.skills.split(',')]
@@ -141,6 +141,24 @@ class Job(models.Model):
             
             # return skills_match and level_match
             return skills_match
+        return False
+    
+    def is_job_matching_salary(self, profile):
+        if profile.preferred_salary:
+            salary_match = True if self.salary_range == profile.preferred_salary else False
+            return salary_match
+        return False
+    
+    def is_job_matching_location(self, profile):
+        if profile.preferred_work_location:
+            location_match = True if self.location == profile.preferred_work_location else False
+            return location_match
+        return False
+    
+    def is_job_matching_yoe(self, profile):
+        if profile.years_of_experience:
+            yoe_match = True if self.minimum_years_of_experience == profile.years_of_experience else False
+            return yoe_match
         return False
 
     def __str__(self):
@@ -224,11 +242,21 @@ class JobFollow(models.Model):
         return f"{self.candidate.full_name} is following {self.job.title}"
     
 class InterviewInformation(models.Model):
+    OFFLINE = 'Offline'
+    ONLINE = 'Online'
+
+    TYPE = [
+        (OFFLINE, 'Offline'),
+        (ONLINE, 'Online'),
+    ]
+
     candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    interview_type = models.CharField(max_length=10, choices=TYPE, default=OFFLINE, null=True, blank=True)
     time_interview = models.TimeField(null=True, blank=True)
     date_interview = models.DateField(null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
+    duration = models.PositiveIntegerField(default=0)
     note = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
