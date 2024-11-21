@@ -61,3 +61,6 @@ channels==4.1.0
 daphne==4.1.2
 django-celery-beat==2.7.0
 channels-redis==4.2.0
+google-api-python-client==2.153.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1

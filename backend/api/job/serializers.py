@@ -5,6 +5,10 @@ from django.core.mail import send_mail
 from django.conf import settings
 from ..options.serializers import *
 from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.urls import reverse
+from .helpers import create_google_meet_event
+from django.utils import timezone
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -444,28 +448,79 @@ class ListJobFollowSerializer(serializers.ModelSerializer):
 class InterviewInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewInformation
-        fields = ['id', 'time_interview', 'date_interview', 'address', 'note']
+        fields = ['id', 'interview_type', 'time_interview', 'date_interview', 'address', 'duration', 'note']
 
     def add(self, request):
         try:
             candidate_id = request.data.get('candidate_id')
+            job_id = request.data.get('job_id')
             candidate = CandidateProfile.objects.get(id=candidate_id)
             company = Company.objects.get(user=request.user)
+            job = Job.objects.get(pk=job_id)
+            interview_type = self.validated_data['interview_type']
             time_interview = self.validated_data['time_interview']
             date_interview = self.validated_data['date_interview']
-            address = self.validated_data['address']
+            duration = self.validated_data['duration']
             note = self.validated_data['note']
-            model = InterviewInformation.objects.create(
-                candidate=candidate,
-                company=company,
-                time_interview=time_interview,
-                date_interview=date_interview,
-                address=address,
-                note=note
-            )
+
+            accept_url = f"http://localhost:8000{reverse('interview_response')}?response=accept"
+            refuse_url = f"http://localhost:8000{reverse('interview_response')}?response=refuse"
+
+            context = {
+                'job_title': job.title,
+                'candidate_name': candidate.full_name,
+                'company_name': company.name,
+                'interview_date': date_interview,
+                'interview_time': time_interview,
+                'duration': duration,
+                'accept_url': accept_url,
+                'refuse_url': refuse_url,
+                'sender_name': 'HR Department',
+                'sender_position': 'Admin - HR Division',
+                'contact_information': company.user.email
+            }
+            if interview_type.lower() == 'offline':
+                address = self.validated_data['address']
+                model = InterviewInformation.objects.create(
+                    candidate=candidate,
+                    company=company,
+                    interview_type=InterviewInformation.OFFLINE,
+                    time_interview=time_interview,
+                    date_interview=date_interview,
+                    address=address,
+                    duration=duration,
+                    note=note
+                )
+                context['interview_location'] = address
+                context['is_online'] = False
+            else:
+                model = InterviewInformation.objects.create(
+                    candidate=candidate,
+                    company=company,
+                    interview_type=InterviewInformation.ONLINE,
+                    time_interview=time_interview,
+                    date_interview=date_interview,
+                    duration=duration,
+                    note=note
+                )
+                datetime_itv = timezone.datetime.combine(model.date_interview, model.time_interview)
+                datetime_itv = timezone.make_aware(datetime_itv)
+                date_itv = timezone.localtime(datetime_itv).date()
+                time_itv = timezone.localtime(datetime_itv).time()
+                meet_link = create_google_meet_event(
+                    candidate_name=candidate.full_name,
+                    interview_date=date_itv,
+                    interview_time=time_itv,
+                    duration=duration,
+                    interviewer_email=candidate.user.email
+                )
+                context['interview_location'] = meet_link if meet_link else "To be announced"
+                context['is_online'] = True
+            
+            email_body = render_to_string('emails/interview_invitation.html', context)
             interview_email = EmailMessage(
-                subject=f'Interview information from {company.name}',
-                body=f'We are very happy to invite you to the upcoming interview<br>Time: {time_interview} {date_interview}<br>Address: {address}<br>Note: {note}',
+                subject='Interview Invitation',
+                body=email_body,
                 from_email=settings.EMAIL_HOST_USER,
                 to=[candidate.user.email]
             )

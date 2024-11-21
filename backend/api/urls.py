@@ -8,4 +8,7 @@ urlpatterns = [
     path('company/', include('api.company.urls')),
     path('job/', include('api.job.urls')),
     path('options/', include('api.options.urls')),
+
+    # Google call back
+    path('oauth/callback/', google_oauth_callback, name='google_oauth_callback'),
 ]
