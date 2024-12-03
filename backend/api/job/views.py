@@ -66,7 +66,11 @@ class PublicJobListOfCompanyView(generics.ListAPIView):
         try:
             company_id = request.query_params.get('company_id')
             company = Company.objects.get(pk=company_id)
-            jobs_list = Job.objects.filter(company=company)
+            jobs_list = Job.objects.filter(
+                company=company,
+                is_deleted=False,
+                status=Job.STATUS_APPROVED
+            ).order_by('-created_at')
 
             page = self.paginate_queryset(jobs_list)
             if page is not None:
