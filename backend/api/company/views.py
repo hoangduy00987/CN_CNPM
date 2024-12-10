@@ -77,7 +77,10 @@ class ListCompanyView(generics.ListAPIView):
     pagination_class = CompanyPagination
 
     def get(self, request):
+        name = request.query_params.get('name')
         companys = Company.objects.filter(is_active=True).order_by('-id')
+        if name:
+            companys = companys.filter(name__icontains=name)
         page = self.paginate_queryset(companys)
         if page is not None:
             serializer = self.serializer_class(page, many=True, context={'request': request})
