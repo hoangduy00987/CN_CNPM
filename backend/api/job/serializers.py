@@ -7,7 +7,7 @@ from ..options.serializers import *
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
-from .helpers import create_google_meet_event
+from .helpers import create_google_meet_event, update_google_calendar_event, delete_google_calendar_event
 from django.utils import timezone
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -448,7 +448,7 @@ class ListJobFollowSerializer(serializers.ModelSerializer):
 class InterviewInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewInformation
-        fields = ['id', 'interview_type', 'time_interview', 'date_interview', 'address', 'duration', 'note']
+        fields = ['id', 'interview_type', 'time_interview', 'date_interview', 'address', 'duration', 'note', 'meet_link']
 
     def add(self, request):
         try:
@@ -477,7 +477,8 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
                 'refuse_url': refuse_url,
                 'sender_name': 'HR Department',
                 'sender_position': 'Admin - HR Division',
-                'contact_information': company.user.email
+                'contact_information': company.user.email,
+                'is_created': True
             }
             if interview_type.lower() == 'offline':
                 address = self.validated_data['address']
@@ -507,15 +508,18 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
                 datetime_itv = timezone.make_aware(datetime_itv)
                 date_itv = timezone.localtime(datetime_itv).date()
                 time_itv = timezone.localtime(datetime_itv).time()
-                meet_link = create_google_meet_event(
+                result = create_google_meet_event(
                     candidate_name=candidate.full_name,
                     interview_date=date_itv,
                     interview_time=time_itv,
                     duration=duration,
                     interviewer_email=candidate.user.email
                 )
-                context['interview_location'] = meet_link if meet_link else "To be announced"
+                context['interview_location'] = result['meet_link'] if result['meet_link'] else "To be announced"
                 context['is_online'] = True
+                model.event_id = result['event_id'] if result['event_id'] else None
+                model.meet_link = result['meet_link'] if result['meet_link'] else None
+                model.save()
             
             email_body = render_to_string('emails/interview_invitation.html', context)
             interview_email = EmailMessage(
@@ -529,6 +533,95 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
             return model
         except Exception as error:
             print('add_interview_error:', error)
+            return None
+    
+    def update(self, request):
+        try:
+            interview_id = request.data.get('interview_id')
+            candidate_id = request.data.get('candidate_id')
+            job_id = request.data.get('job_id')
+            interview = InterviewInformation.objects.get(pk=interview_id)
+            candidate = CandidateProfile.objects.get(id=candidate_id)
+            company = Company.objects.get(user=request.user)
+            job = Job.objects.get(pk=job_id)
+            interview_type = self.validated_data['interview_type']
+            time_interview = self.validated_data['time_interview']
+            date_interview = self.validated_data['date_interview']
+            duration = self.validated_data['duration']
+            note = self.validated_data['note']
+
+            context = {
+                'job_title': job.title,
+                'candidate_name': candidate.full_name,
+                'company_name': company.name,
+                'interview_date': date_interview,
+                'interview_time': time_interview,
+                'duration': duration,
+                'sender_name': 'HR Department',
+                'sender_position': 'Admin - HR Division',
+                'contact_information': company.user.email,
+                'is_created': False
+            }
+            if interview_type.lower() == 'offline':
+                address = self.validated_data['address']
+                interview.interview_type = InterviewInformation.OFFLINE
+                interview.time_interview = time_interview
+                interview.date_interview = date_interview
+                interview.address = address
+                interview.note = note
+                if interview.event_id:
+                    delete_google_calendar_event(event_id=interview.event_id)
+                    interview.event_id = None
+                    interview.meet_link = None
+                interview.save()
+                context['interview_location'] = address
+                context['is_online'] = False
+            else:
+                interview.interview_type = InterviewInformation.ONLINE
+                interview.time_interview = time_interview
+                interview.date_interview = date_interview
+                interview.duration = duration
+                interview.note = note
+                interview.address = None
+                datetime_itv = timezone.datetime.combine(interview.date_interview, interview.time_interview)
+                datetime_itv = timezone.make_aware(datetime_itv)
+                date_itv = timezone.localtime(datetime_itv).date()
+                time_itv = timezone.localtime(datetime_itv).time()
+                if interview.event_id:
+                    update_google_calendar_event(
+                        event_id=interview.event_id,
+                        candidate_name=candidate.full_name,
+                        interview_date=date_itv,
+                        interview_time=time_itv,
+                        duration=duration
+                    )
+                    context['interview_location'] = interview.meet_link if interview.meet_link else "To be announced"
+                else:
+                    result = create_google_meet_event(
+                        candidate_name=candidate.full_name,
+                        interview_date=date_itv,
+                        interview_time=time_itv,
+                        duration=duration,
+                        interviewer_email=candidate.user.email
+                    )
+                    context['interview_location'] = result['meet_link'] if result['meet_link'] else "To be announced"
+                    interview.event_id = result['event_id'] if result['event_id'] else None
+                    interview.meet_link = result['meet_link'] if result['meet_link'] else None
+                interview.save()
+                context['is_online'] = True
+            
+            email_body = render_to_string('emails/interview_invitation.html', context)
+            interview_email = EmailMessage(
+                subject='Interview Invitation',
+                body=email_body,
+                from_email=settings.EMAIL_HOST_USER,
+                to=[candidate.user.email]
+            )
+            interview_email.content_subtype = "html"
+            interview_email.send()
+            return interview
+        except Exception as error:
+            print('update_interview_error:', error)
             return None
 
 class JobPostingLimitOfCompanySerializer(serializers.ModelSerializer):

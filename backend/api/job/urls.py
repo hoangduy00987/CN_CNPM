@@ -34,6 +34,18 @@ save_and_post_job = JobManagementMVS.as_view({
 get_job_by_id = JobManagementMVS.as_view({
     'get': 'get_job_by_id'
 })
+add_interview_information = InterviewInformationMVS.as_view({
+    'post': 'add_interview_information'
+})
+update_interview_information = InterviewInformationMVS.as_view({
+    'post': 'update_interview_information'
+})
+get_interview_information = InterviewInformationMVS.as_view({
+    'get': 'get_interview_information'
+})
+get_list_interview_information = InterviewInformationMVS.as_view({
+    'get': 'get_list_interview_information'
+})
 
 # ========== Admin ============
 admin_get_number_of_job_posting = AdminManageJobPostingMVS.as_view({
@@ -60,7 +72,10 @@ urlpatterns = [
     path('notifications_job/', NotificationListView.as_view(), name='notification-list'),
     path('follow/', FollowJobView.as_view(), name='follow_job'),
     path('user-get-list-follow-job/', ListJobFollowOfUserView.as_view(), name='user_get_list_follow_job'),
-    path('add-interview-information/', AddInterviewInformationView.as_view(), name='add_interview_infor'),
+    path('add_interview_information/', add_interview_information, name='add_interview_information'),
+    path('update_interview_information/', update_interview_information, name='update_interview_information'),
+    path('get_interview_information/', get_interview_information, name='get_interview_information'),
+    path('get_list_interview_information/', get_list_interview_information, name='get_list_interview_information'),
     path('interview-response/', interview_response, name='interview_response'),
     path('get_job_posting_limit/', get_job_posting_limit, name='get_job_posting_limit'),
 
