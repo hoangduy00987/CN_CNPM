@@ -307,7 +307,7 @@ class JobListOfCompanyView(APIView):
     def get(self, request):
         try:
             company = get_object_or_404(Company, user=request.user)
-            job_list = Job.objects.filter(company=company, is_deleted=False).order_by('id')
+            job_list = Job.objects.filter(company=company, is_deleted=False).order_by('-created_at')
             serializer = self.serializer_class(job_list, many=True, context={'request': request})
             return Response(serializer.data)
         except Exception as error:
@@ -638,7 +638,7 @@ class AdminListJobPostingView(APIView):
                 Q(is_deleted=False) &
                 ~Q(status=Job.STATUS_DRAFT)
                 # Q(expired_at__gt=timezone.now())
-            )
+            ).order_by('-created_at')
             serializer = self.serializer_class(jobs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as error:
