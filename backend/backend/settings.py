@@ -76,6 +76,7 @@ CORS_ALLOWED_ORIGINS = [
    'http://localhost:8081',
    'http://localhost:5500',
    'http://127.0.0.1:5500',
+   'https://devhunt-beta.vercel.app'
 ]
 ROOT_URLCONF = 'backend.urls'
 CORS_ALLOW_HEADERS = [
