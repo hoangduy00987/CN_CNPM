@@ -79,25 +79,59 @@ def authenticate_google_account():
     creds = None
     token_path = TOKEN_FILE  # File lưu thông tin token
 
-    # Kiểm tra nếu token đã tồn tại
-    if os.path.exists(token_path):
-        with open(token_path, 'rb') as token_file:
-            creds = pickle.load(token_file)
-    
-    # Nếu token không tồn tại hoặc không hợp lệ, thực hiện xác thực
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                client_secrets_file=CREDENTIALS_FILE,
-                scopes=SCOPES
-            )
-            creds = flow.run_local_server(port=8080)
+    try:
+        # Kiểm tra nếu token đã tồn tại
+        if os.path.exists(token_path):
+            with open(token_path, 'rb') as token_file:
+                creds = pickle.load(token_file)
+        
+        # Nếu token không tồn tại hoặc không hợp lệ, thực hiện xác thực
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    client_secrets_file=CREDENTIALS_FILE,
+                    scopes=SCOPES
+                )
+                creds = flow.run_local_server(port=8080)
 
-        # Lưu token vào file để sử dụng lại
+            # Lưu token vào file để sử dụng lại
+            with open(token_path, 'wb') as token_file:
+                pickle.dump(creds, token_file)
+    
+    except FileNotFoundError:
+        print(f"Token file not found at {token_path}, creating a new one.")
+        flow = InstalledAppFlow.from_client_secrets_file(
+            client_secrets_file=CREDENTIALS_FILE,
+            scopes=SCOPES
+        )
+        creds = flow.run_local_server(port=8080)
+
+        # Lưu token mới vào file token.json
         with open(token_path, 'wb') as token_file:
             pickle.dump(creds, token_file)
+    
+    except EOFError:
+        print("Token file is corrupted or empty. Recreating it.")
+        # Xóa file token bị lỗi
+        if os.path.exists(token_path):
+            os.remove(token_path)
+
+        # Thực hiện xác thực lại
+        flow = InstalledAppFlow.from_client_secrets_file(
+            client_secrets_file=CREDENTIALS_FILE,
+            scopes=SCOPES
+        )
+        creds = flow.run_local_server(port=8080)
+
+        # Lưu token mới vào file token.json
+        with open(token_path, 'wb') as token_file:
+            pickle.dump(creds, token_file)
+    
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        raise e
         
     return creds
 
