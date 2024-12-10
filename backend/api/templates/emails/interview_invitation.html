@@ -22,7 +22,10 @@
     </style>
   </head>
   <body>
-    <h2>Interview Invitation for {{ job_title }}</h2>
+    <h2>
+      Interview Invitation for {{ job_title }} {% if not is_created %} (Updated)
+      {% endif %}
+    </h2>
     <p>Dear {{ candidate_name }},</p>
 
     <p>

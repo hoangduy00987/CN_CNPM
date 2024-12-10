@@ -397,7 +397,7 @@ class ApplicationInforMVS(viewsets.ModelViewSet):
     def get_list_application_candidate(self, request):
         try:
             candidate = CandidateProfile.objects.get(user=request.user)
-            applications = Application.objects.filter(candidate=candidate)
+            applications = Application.objects.filter(candidate=candidate).order_by('-created_at')
             serializer = self.serializer_class(applications, many=True, context={'request': request})
             return Response(serializer.data)
         except Exception as error:
@@ -411,7 +411,7 @@ class ApplicationInforMVS(viewsets.ModelViewSet):
             if not job_id:
                 return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
             
-            applications = Application.objects.filter(job=job_id)
+            applications = Application.objects.filter(job=job_id).order_by('-created_at')
             serializer = self.serializer_class(applications, many=True, context={'request': request})
             return Response(serializer.data)
         except Exception as error:
@@ -536,11 +536,12 @@ class ListJobFollowOfUserView(APIView):
             print('get_list_follow_job_user_error:', error)
             return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
-class AddInterviewInformationView(APIView):
+class InterviewInformationMVS(viewsets.ModelViewSet):
     serializer_class = InterviewInformationSerializer
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    @action(methods=["POST"], detail=False, url_path='add_interview_information', url_name='add_interview_information')
+    def add_interview_information(self, request):
         try:
             serializer = self.serializer_class(data=request.data)
             data = {}
@@ -551,6 +552,40 @@ class AddInterviewInformationView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(methods=["POST"], detail=False, url_path='update_interview_information', url_name='update_interview_information')
+    def update_interview_information(self, request):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            data = {}
+            if serializer.is_valid():
+                serializer.update(request)
+                data['message'] = 'Update interview information successfully.'
+                return Response(data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=["GET"], detail=False, url_path='get_interview_information', url_name='get_interview_information')
+    def get_interview_information(self, request):
+        try:
+            interview_id = request.query_params.get('interview_id')
+            interview = InterviewInformation.objects.get(pk=interview_id)
+            serializer = self.serializer_class(interview, context={'request': request})
+            return Response(serializer.data)
+        except InterviewInformation.DoesNotExist:
+            return Response({"error": "Interview information not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(methods=["GET"], detail=False, url_path='get_list_interview_information', url_name='get_list_interview_information')
+    def get_list_interview_information(self, request):
+        try:
+            job_id = request.query_params.get('job_id')
+            job = Job.objects.get(pk=job_id)
+            interview_list = InterviewInformation.objects.filter(company=job.company).order_by('-created_at')
+            serializer = self.serializer_class(interview_list, many=True, context={'request': request})
+            return Response(serializer.data)
+        except InterviewInformation.DoesNotExist:
+            return Response({"error": "Interview information not found."}, status=status.HTTP_404_NOT_FOUND)
 
 def interview_response(request):
     response = request.GET.get('response')

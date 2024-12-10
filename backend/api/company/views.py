@@ -77,7 +77,7 @@ class ListCompanyView(generics.ListAPIView):
     pagination_class = CompanyPagination
 
     def get(self, request):
-        companys = Company.objects.filter(is_active=True).order_by('id')
+        companys = Company.objects.filter(is_active=True).order_by('-id')
         page = self.paginate_queryset(companys)
         if page is not None:
             serializer = self.serializer_class(page, many=True, context={'request': request})
@@ -127,7 +127,7 @@ class AdminManageCompanyMVS(viewsets.ModelViewSet):
     
     @action(methods=['GET'], detail=False, url_path='admin_get_list_company', url_name='admin_get_list_company')
     def admin_get_list_company(self, request):
-        companys = Company.objects.all().order_by('id')
+        companys = Company.objects.all().order_by('-id')
         serializer = self.serializer_class(companys, many=True, context={'request': request})
         return Response(serializer.data)
     

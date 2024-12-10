@@ -69,11 +69,70 @@ def create_google_meet_event(candidate_name, interview_date, interview_time, dur
 
         # Tạo sự kiện trong Calendar
         event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
-        return event.get('hangoutLink')  # Link Google Meet
+        return {
+            'meet_link': event.get('hangoutLink'),  # Link Google Meet
+            'event_id': event.get('id')
+        }
     
     except HttpError as error:
         print(f"An error occurred: {error}")
         return None
+
+def update_google_calendar_event(event_id, candidate_name, interview_date, interview_time, duration):
+    try:
+        # Load credentials
+        creds = load_token_from_env()
+
+        # Kết nối với Calendar API
+        service = build('calendar', 'v3', credentials=creds)
+
+        # Lấy thông tin sự kiện hiện tại
+        event = service.events().get(calendarId='primary', eventId=event_id).execute()
+
+        # Tạo thời gian bắt đầu và kết thúc
+        start_time = datetime.combine(interview_date, interview_time)
+        end_time = start_time + timedelta(minutes=duration)
+
+        # Cập nhật thông tin sự kiện
+        updated_data = {
+            'summary': f'Updated Interview with {candidate_name}',
+            'description': f'Updated description for {candidate_name} interview.',
+            'start': {
+                'dateTime': start_time.isoformat(),
+                'timeZone': 'Asia/Ho_Chi_Minh',
+            },
+            'end': {
+                'dateTime': end_time.isoformat(),
+                'timeZone': 'Asia/Ho_Chi_Minh',
+            },
+        }
+        event.update(updated_data)
+
+        # Gửi yêu cầu cập nhật
+        updated_event = service.events().update(calendarId='primary', eventId=event_id, body=event).execute()
+
+        print(f"Event {event_id} has been updated.")
+        
+        return updated_event
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+        return None
+
+def delete_google_calendar_event(event_id):
+    try:
+        # Load credentials
+        creds = load_token_from_env()
+
+        # Kết nối với Calendar API
+        service = build('calendar', 'v3', credentials=creds)
+
+        # Xóa sự kiện
+        service.events().delete(calendarId='primary', eventId=event_id).execute()
+        print(f"Event {event_id} has been deleted.")
+        return True
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+        return False
 
 def authenticate_google_account():
     creds = None
