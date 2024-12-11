@@ -251,7 +251,7 @@ class InterviewInformation(models.Model):
     ]
 
     candidate = models.ForeignKey(CandidateProfile, on_delete=models.CASCADE)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='job_w_interview', null=True, blank=True)
     interview_type = models.CharField(max_length=10, choices=TYPE, default=OFFLINE, null=True, blank=True)
     time_interview = models.TimeField(null=True, blank=True)
     date_interview = models.DateField(null=True, blank=True)
