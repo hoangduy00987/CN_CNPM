@@ -575,17 +575,21 @@ class InterviewInformationMVS(viewsets.ModelViewSet):
             return Response(serializer.data)
         except InterviewInformation.DoesNotExist:
             return Response({"error": "Interview information not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
     @action(methods=["GET"], detail=False, url_path='get_list_interview_information', url_name='get_list_interview_information')
     def get_list_interview_information(self, request):
         try:
             job_id = request.query_params.get('job_id')
             job = Job.objects.get(pk=job_id)
-            interview_list = InterviewInformation.objects.filter(company=job.company).order_by('-created_at')
+            interview_list = InterviewInformation.objects.filter(job=job).order_by('-created_at')
             serializer = self.serializer_class(interview_list, many=True, context={'request': request})
             return Response(serializer.data)
-        except InterviewInformation.DoesNotExist:
-            return Response({"error": "Interview information not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Job.DoesNotExist:
+            return Response({"error": "Job not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 def interview_response(request):
     response = request.GET.get('response')

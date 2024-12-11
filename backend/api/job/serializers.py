@@ -446,9 +446,16 @@ class ListJobFollowSerializer(serializers.ModelSerializer):
         return obj.job.company.name
 
 class InterviewInformationSerializer(serializers.ModelSerializer):
+    candidate = serializers.SerializerMethodField()
     class Meta:
         model = InterviewInformation
-        fields = ['id', 'interview_type', 'time_interview', 'date_interview', 'address', 'duration', 'note', 'meet_link']
+        fields = ['id', 'candidate', 'interview_type', 'time_interview', 'date_interview', 'address', 'duration', 'note', 'meet_link']
+    
+    def get_candidate(self, obj):
+        data = {}
+        data['id'] = obj.candidate.id
+        data['full_name'] = obj.candidate.full_name
+        return data
 
     def add(self, request):
         try:
@@ -484,7 +491,7 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
                 address = self.validated_data['address']
                 model = InterviewInformation.objects.create(
                     candidate=candidate,
-                    company=company,
+                    job=job,
                     interview_type=InterviewInformation.OFFLINE,
                     time_interview=time_interview,
                     date_interview=date_interview,
@@ -497,7 +504,7 @@ class InterviewInformationSerializer(serializers.ModelSerializer):
             else:
                 model = InterviewInformation.objects.create(
                     candidate=candidate,
-                    company=company,
+                    job=job,
                     interview_type=InterviewInformation.ONLINE,
                     time_interview=time_interview,
                     date_interview=date_interview,
